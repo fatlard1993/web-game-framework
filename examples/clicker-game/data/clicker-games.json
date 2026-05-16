@@ -1,0 +1,98 @@
+{
+	"games": {
+		"uypu3": {
+			"id": "uypu3",
+			"name": "Game 1",
+			"options": {
+				"name": "Game 1"
+			},
+			"players": [
+				{
+					"id": "87116",
+					"name": "test1",
+					"clicks": 0
+				},
+				{
+					"id": "1557j",
+					"name": "test2",
+					"clicks": 0
+				}
+			],
+			"globalClicks": 0,
+			"status": "waiting",
+			"startTime": null,
+			"endTime": null,
+			"duration": 30,
+			"winner": null
+		},
+		"ztqwj": {
+			"id": "ztqwj",
+			"name": "Game 1",
+			"options": {
+				"name": "Game 1"
+			},
+			"players": [
+				{
+					"id": "xso4z",
+					"name": "test2",
+					"clicks": 10
+				}
+			],
+			"globalClicks": 10,
+			"status": "finished",
+			"startTime": 1765590851268,
+			"endTime": 1765590881272,
+			"duration": 30,
+			"winner": {
+				"id": "xso4z",
+				"name": "test2",
+				"clicks": 10
+			}
+		},
+		"5x1wr": {
+			"id": "5x1wr",
+			"name": "Game 1",
+			"options": {
+				"name": "Game 1"
+			},
+			"players": []
+		},
+		"yx6kf": {
+			"id": "yx6kf",
+			"name": "Game 1",
+			"options": {
+				"name": "Game 1"
+			},
+			"players": [
+				{
+					"id": "zmy9z",
+					"name": "player1",
+					"clicks": 3
+				},
+				{
+					"id": "8hpyz",
+					"name": "player2",
+					"clicks": 5
+				}
+			],
+			"globalClicks": 8,
+			"status": "finished",
+			"startTime": 1765604218367,
+			"endTime": 1765604248370,
+			"duration": 30,
+			"winner": {
+				"id": "8hpyz",
+				"name": "player2",
+				"clicks": 5
+			}
+		},
+		"ia9u0": {
+			"id": "ia9u0",
+			"name": "Game 1",
+			"options": {
+				"name": "Game 1"
+			},
+			"players": []
+		}
+	}
+}

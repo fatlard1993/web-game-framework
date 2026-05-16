@@ -1,0 +1,26 @@
+# macOS
+.DS_Store
+
+# dependencies
+node_modules
+
+# build output
+build
+dist
+*.asText
+
+# environment variables
+.env
+.env.local
+
+# logs
+*.log
+npm-debug.log*
+bun-debug.log*
+
+# testing
+coverage
+
+# IDE
+.vscode
+.idea
