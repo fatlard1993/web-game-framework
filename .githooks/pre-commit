@@ -1,0 +1,26 @@
+#!/usr/bin/env sh
+
+changedFiles=$(echo `git diff --name-only --cached --pretty -r`)
+
+changedCore=$(echo $changedFiles | grep -Eo "core/")
+changedClient=$(echo $changedFiles | grep -Eo "client/")
+changedUI=$(echo $changedFiles | grep -Eo "ui/")
+changedUtils=$(echo $changedFiles | grep -o "utils/")
+changedPlugins=$(echo $changedFiles | grep -Eo "plugins/")
+
+echo $changedFiles
+
+run_tests() {
+	dir=$1
+	if find "$dir" -name "*.test.*" -o -name "*.spec.*" 2>/dev/null | grep -q .; then
+		bun test "$dir" || exit 1
+	fi
+}
+
+if [ "$changedCore" != "" ]; then run_tests core; fi
+if [ "$changedClient" != "" ]; then run_tests client; fi
+if [ "$changedUI" != "" ]; then run_tests ui; fi
+if [ "$changedUtils" != "" ]; then run_tests utils; fi
+if [ "$changedPlugins" != "" ]; then run_tests plugins; fi
+
+bun run format || exit 1
