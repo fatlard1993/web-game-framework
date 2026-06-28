@@ -1,4 +1,4 @@
-import { Link, Button, Notify, copyToClipboard, randInt } from 'vanilla-bean-components';
+import { Link, Button, Notify, copyToClipboard, randInt } from '@vanilla-bean/components';
 
 import { View } from '../layout/index.js';
 import { getGames, onMessage } from '../../client/index.js';
@@ -46,8 +46,14 @@ export default class Hub extends View {
 		};
 	}
 
-	async render() {
-		super.render();
+	build() {
+		super.build();
+		this._init();
+	}
+
+	async _init() {
+		this._body.empty();
+		this._socketCleanup?.();
 
 		const games = await getGames();
 
@@ -70,11 +76,12 @@ export default class Hub extends View {
 				data.update === 'removePlayer'
 			) {
 				games.invalidateCache();
-				this.render();
+				this._init();
 			}
 		});
 
-		this.addCleanup('socketCleanup', () => socketCleanup());
+		this._socketCleanup = socketCleanup;
+		this.addCleanup('socketCleanup', () => this._socketCleanup?.());
 
 		if (!games.body?.length) {
 			// Allow games to provide their own container component for empty state

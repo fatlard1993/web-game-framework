@@ -1,4 +1,4 @@
-import { debounce } from 'vanilla-bean-components/utils';
+import { debounce } from '@vanilla-bean/components/utils';
 import Players from './Players.js';
 import EventRouter from './EventRouter.js';
 

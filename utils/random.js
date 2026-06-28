@@ -1,6 +1,6 @@
 // Note: randInt and randFromArray are available from vanilla-bean-components/utils
 // We don't re-export them here to avoid ambiguous imports when both are used together
-import { randInt } from 'vanilla-bean-components/utils';
+import { randInt } from '@vanilla-bean/components/utils';
 
 /**
  * Shuffle an array in place (Fisher-Yates algorithm)

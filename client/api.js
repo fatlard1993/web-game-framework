@@ -1,4 +1,4 @@
-import { GET, POST, DELETE } from 'vanilla-bean-components';
+import { GET, POST, DELETE } from '@vanilla-bean/hypertether';
 import gameContext from './gameContext.js';
 
 /**
@@ -17,10 +17,10 @@ const apiContext = {
 	},
 };
 
-export const getGames = async options => await GET('/games', { id: 'games', ...options });
+export const getGames = async options => await GET('/games', { apiId: 'games', ...options });
 
 export const getGame = async (id, options) =>
-	await GET('/games/:id', { id: ['games', id], urlParameters: { id }, ...options });
+	await GET('/games/:id', { apiId: ['games', id], urlParameters: { id }, ...options });
 
 export const createGame = async options => await POST('/games', { invalidates: ['games'], ...options });
 
