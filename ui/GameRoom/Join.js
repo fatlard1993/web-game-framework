@@ -22,16 +22,16 @@ export default class Join extends View {
 						new Button({
 							content: options.toolbar?.joinText || 'Join',
 							onPointerPress: async () => {
-								if (this.form.validate()) return;
+								if (this.form.hasErrors()) return;
 
 								const join = await joinGame(this.options.gameId, {
 									body: { ...this.form.options.data, playerId: localStorage.getItem(this.options.gameId) },
 								});
 
-								if (!join.success) {
+								if (join.status !== 'success') {
 									return new Notify({
 										type: 'error',
-										content: join.body,
+										content: join.body?.message || join.body?.error || String(join.body),
 										x: randInt(12, window.innerWidth - 12),
 										y: randInt(72, window.innerHeight / 3),
 									});

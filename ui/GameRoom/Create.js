@@ -23,7 +23,7 @@ export default class Create extends View {
 						new Button({
 							textContent: options.toolbar?.createText || 'Create Game',
 							onPointerPress: async () => {
-								if (this.form.validate()) return;
+								if (this.form.hasErrors()) return;
 
 								const game = (await createGame({ body: { ...this.form.options.data } })).body;
 
