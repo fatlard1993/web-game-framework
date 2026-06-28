@@ -1,4 +1,4 @@
-import { Link, Button, Notify, Form, randInt } from 'vanilla-bean-components';
+import { Link, Button, Notify, Form, randInt } from '@vanilla-bean/components';
 
 import { View } from '../layout/index.js';
 import { getGame, joinGame } from '../../client/index.js';
@@ -51,9 +51,12 @@ export default class Join extends View {
 		);
 	}
 
-	async render() {
-		super.render();
+	build() {
+		super.build();
+		this._init();
+	}
 
+	async _init() {
 		const playerId = localStorage.getItem(this.options.gameId);
 
 		const game = await getGame(this.options.gameId);

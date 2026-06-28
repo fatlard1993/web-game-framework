@@ -1,4 +1,4 @@
-import { Context } from 'vanilla-bean-components';
+import { Oxject as Context } from '@vanilla-bean/components';
 import Players from '../core/Players.js';
 
 /**

@@ -1,4 +1,4 @@
-import { Link, Button, Form } from 'vanilla-bean-components';
+import { Link, Button, Form } from '@vanilla-bean/components';
 
 import { View } from '../layout/index.js';
 import { createGame } from '../../client/index.js';
@@ -37,9 +37,12 @@ export default class Create extends View {
 		);
 	}
 
-	async render() {
-		super.render();
+	build() {
+		super.build();
+		this._init();
+	}
 
+	_init() {
 		this.form = new Form({
 			style: {
 				margin: '12px 0 12px 12px',
