@@ -8,5 +8,4 @@ export {
 	default as createClientEventRouter,
 	createValidationMiddleware,
 	createLoggingMiddleware,
-	createThrottleMiddleware,
 } from './eventRouter.js';

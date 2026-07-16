@@ -126,32 +126,4 @@ export function createLoggingMiddleware(options = {}) {
 	};
 }
 
-/**
- * Create throttling middleware
- * @param {number} delay - Throttle delay in ms
- * @param {Function} [keyFn] - Function to generate throttle key (default: eventName)
- * @returns {Function} Middleware function
- */
-export function createThrottleMiddleware(delay, keyFn) {
-	const timers = new Map();
-
-	return (data, context, next) => {
-		const key = keyFn ? keyFn(data, context) : context.eventName;
-
-		if (timers.has(key)) {
-			// Throttled
-			return false;
-		}
-
-		timers.set(
-			key,
-			setTimeout(() => {
-				timers.delete(key);
-			}, delay),
-		);
-
-		return next();
-	};
-}
-
 export default createClientEventRouter;

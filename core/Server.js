@@ -1,3 +1,5 @@
+import Database from './Database.js';
+
 /**
  * Minimal WebSocket server for multiplayer games
  *
@@ -25,7 +27,7 @@ export default class Server {
 	 * @param {Function} [options.router] - Optional HTTP request router function
 	 * @param {string} [options.wsPath] - WebSocket upgrade path
 	 * @param {Function} [options.Game] - Game class to instantiate
-	 * @param {object} [options.database] - Optional database instance
+	 * @param {object|string} [options.database] - Database instance, or a file path to create one from
 	 * @param {object} [options.logger] - Optional logger (console-compatible)
 	 * @param {number} [options.verbosity] - Log verbosity level (0-3)
 	 * @param {object} [options.websocket] - Optional websocket handlers
@@ -37,7 +39,6 @@ export default class Server {
 		this.clients = {};
 		this.games = {};
 		this.Game = Game;
-		this.database = database;
 		this.wsPath = wsPath;
 
 		// Simple logger fallback
@@ -47,6 +48,15 @@ export default class Server {
 			error: (...args) => console.error('[ERROR]', ...args),
 			debug: (...args) => verbosity >= 3 && console.log('[DEBUG]', ...args),
 		};
+
+		if (typeof database === 'string') database = new Database({ filePath: database, logger: this.logger });
+		else if (database && !(database instanceof Database)) {
+			throw new Error('Server option "database" must be a Database instance or a file path string');
+		}
+
+		this.database = database;
+
+		if (!database) this.logger.info('No database configured - games will not persist across restarts');
 
 		// Store verbosity
 		if (verbosity !== undefined) {
