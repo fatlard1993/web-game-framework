@@ -1,6 +1,6 @@
 import { GET, POST, DELETE } from '@vanilla-bean/hypertether';
 
-import gameContext from '../gameContext';
+import gameContext from './gameContext';
 
 const apiContext = {
 	get gameId() {

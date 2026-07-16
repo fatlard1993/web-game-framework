@@ -30,6 +30,7 @@ const messageListeners = new Set();
 /**
  * Create WebSocket connection
  * @param {string} [url] - Optional WebSocket URL (default: ws://current-host/ws)
+ * @returns {WebSocket} The newly created socket
  */
 const createSocket = url => {
 	const wsUrl = url || `ws://${window.location.host}/ws`;

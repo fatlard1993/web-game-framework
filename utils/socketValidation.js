@@ -67,8 +67,13 @@ export const validatePlayerMessage = (data, logger = console) => {
 
 	// Validate position updates if present
 	if (data.player?.position) {
-		const pos = data.player.position;
-		if (typeof pos.x !== 'number' || typeof pos.y !== 'number' || !Number.isFinite(pos.x) || !Number.isFinite(pos.y)) {
+		const position = data.player.position;
+		if (
+			typeof position.x !== 'number' ||
+			typeof position.y !== 'number' ||
+			!Number.isFinite(position.x) ||
+			!Number.isFinite(position.y)
+		) {
 			logger.warn?.('Invalid player message: invalid position data', {
 				data,
 				position: data.player?.position,
@@ -112,8 +117,13 @@ export const validatePlayerMessage = (data, logger = console) => {
  */
 export const validatePositionMessage = (data, logger = console) => {
 	if (data.position) {
-		const pos = data.position;
-		if (typeof pos.x !== 'number' || typeof pos.y !== 'number' || !Number.isFinite(pos.x) || !Number.isFinite(pos.y)) {
+		const position = data.position;
+		if (
+			typeof position.x !== 'number' ||
+			typeof position.y !== 'number' ||
+			!Number.isFinite(position.x) ||
+			!Number.isFinite(position.y)
+		) {
 			logger.warn?.('Invalid message: invalid position data', {
 				data,
 				position: data.position,

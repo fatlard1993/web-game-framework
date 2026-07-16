@@ -57,11 +57,41 @@ const FlexContainer = styled(
 );
 
 export default class Toolbar extends Component {
+	static schema = {
+		heading: {
+			set(value) {
+				if (value?.elem) {
+					this._heading.elem.remove();
+					value.appendTo(this);
+					this._heading = value;
+				} else {
+					this._heading.elem.textContent = typeof value === 'string' ? value : (value?.textContent ?? '');
+				}
+			},
+		},
+		left: {
+			get default() {
+				return [];
+			},
+			set(value) {
+				this._left.empty();
+				this._left.append(value);
+			},
+		},
+		right: {
+			get default() {
+				return [];
+			},
+			set(value) {
+				this._right.empty();
+				this._right.append(value);
+			},
+		},
+	};
+
 	constructor(options = {}, ...children) {
 		super(
 			{
-				left: [],
-				right: [],
 				...options,
 				styles: (theme, Component) => `
 					padding: 15px 15px 0 15px;
@@ -97,18 +127,4 @@ export default class Toolbar extends Component {
 
 		new FlexContainer({ appendTo: this }, this._left, this._right);
 	}
-
-	static handlers = {
-		heading(value) {
-			if (value?.elem) {
-				this._heading.elem.remove();
-				value.appendTo(this);
-				this._heading = value;
-			} else {
-				this._heading.elem.textContent = typeof value === 'string' ? value : (value?.textContent ?? '');
-			}
-		},
-		left(value) { this._left.empty(); this._left.append(value); },
-		right(value) { this._right.empty(); this._right.append(value); },
-	};
 }

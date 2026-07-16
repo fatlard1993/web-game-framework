@@ -240,7 +240,7 @@ import { Server } from '@fatlard1993/web-game-framework';
 const server = new Server({
 	port: 3000,
 	hostname: '0.0.0.0',
-	router: server => req => {
+	router: server => request => {
 		/* ... */
 	},
 	Game: MyGameClass, // Optional
@@ -383,7 +383,7 @@ cleanup();
 **Features:**
 
 - Automatic reconnection with exponential backoff (3 attempts)
-- Connection status notifications (requires `vanilla-bean-components/Notify`)
+- Connection status notifications (requires `Notify` from `@vanilla-bean/components`)
 - Hot reload in development mode
 - Listener tracking survives reconnections
 
@@ -404,7 +404,7 @@ console.log(gameContext.players);
 // Access current player
 console.log(gameContext.currentPlayer);
 
-// Subscribe to changes (requires vanilla-bean-components Context)
+// Subscribe to changes (requires @vanilla-bean/components Context)
 gameContext.subscribe({
 	key: 'players',
 	callback: players => console.log('Players updated:', players),
@@ -520,12 +520,12 @@ cp -r node_modules/@fatlard1993/web-game-framework/ui my-game/client/ui
 ```js
 import { Hub, Join, Create } from '@fatlard1993/web-game-framework/ui/GameRoom';
 
-// Use directly (requires vanilla-bean-components and matching API structure)
+// Use directly (requires @vanilla-bean/components and matching API structure)
 ```
 
 **Direct import assumptions:**
 
-- `vanilla-bean-components` installed
+- `@vanilla-bean/components` installed
 - API routes match expected structure (`/games`, `/games/:id`, etc.)
 - Hash-based routing (`#/hub`, `#/join/:id`, etc.)
 

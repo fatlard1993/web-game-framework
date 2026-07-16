@@ -7,12 +7,6 @@ import GameInfoPopover from './GameInfoPopover.js';
 
 export default class Hub extends View {
 	constructor(options, ...children) {
-		console.log('Hub constructor options:', {
-			options,
-			containerComponent: !!options.containerComponent,
-			noGamesText: !!options.noGamesText,
-		});
-
 		// Extract Hub-specific options that shouldn't be passed to parent
 		const { containerComponent, noGamesText, gamesFoundText, gamesFoundTextFn, buttons, ...parentOptions } = options;
 
@@ -85,10 +79,6 @@ export default class Hub extends View {
 
 		if (!games.body?.length) {
 			// Allow games to provide their own container component for empty state
-			console.log('Debug options:', {
-				containerComponent: !!this.containerComponent,
-				noGamesText: !!this.noGamesText,
-			});
 			if (this.containerComponent && this.noGamesText) {
 				const ContainerComponent = this.containerComponent;
 				this.container = new ContainerComponent({

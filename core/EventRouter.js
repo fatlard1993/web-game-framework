@@ -31,7 +31,7 @@
  */
 export default class EventRouter {
 	/**
-	 * @param {object} options
+	 * @param {object} options - Router configuration
 	 * @param {object} [options.context] - Context object (game, server, etc.)
 	 * @param {object} [options.logger] - Optional logger
 	 * @param {Function} [options.emitFn] - Custom emit function for sending events
@@ -45,7 +45,7 @@ export default class EventRouter {
 		this.handlers = new Map();
 
 		// Event definitions: Map<eventName, config>
-		this.eventDefs = new Map();
+		this.eventDefinitions = new Map();
 
 		// Middleware: Array<function>
 		this.middleware = [];
@@ -64,7 +64,7 @@ export default class EventRouter {
 	 * @param {object} [config.schema] - JSON schema for validation
 	 */
 	defineEvent(eventName, config = {}) {
-		this.eventDefs.set(eventName, {
+		this.eventDefinitions.set(eventName, {
 			validate: config.validate,
 			throttle: config.throttle,
 			transform: config.transform,
@@ -152,12 +152,12 @@ export default class EventRouter {
 	 */
 	async emit(eventName, data, context = {}) {
 		// Get event definition
-		const eventDef = this.eventDefs.get(eventName);
+		const eventDefinition = this.eventDefinitions.get(eventName);
 
 		// Validate if defined
-		if (eventDef?.validate) {
+		if (eventDefinition?.validate) {
 			try {
-				const isValid = await eventDef.validate(data);
+				const isValid = await eventDefinition.validate(data);
 				if (!isValid) {
 					this.logger.warn?.(`[EventRouter] Validation failed for event: ${eventName}`, data);
 					return false;
@@ -170,9 +170,9 @@ export default class EventRouter {
 
 		// Transform data if defined
 		let transformedData = data;
-		if (eventDef?.transform) {
+		if (eventDefinition?.transform) {
 			try {
-				transformedData = await eventDef.transform(data);
+				transformedData = await eventDefinition.transform(data);
 			} catch (error) {
 				this.logger.error?.(`[EventRouter] Transform error for event: ${eventName}`, error);
 				return false;
@@ -222,7 +222,7 @@ export default class EventRouter {
 		const promises = [];
 		for (const handler of matchingHandlers) {
 			// Apply throttling if defined
-			if (eventDef?.throttle) {
+			if (eventDefinition?.throttle) {
 				const throttleKey = `${eventName}:${handler.toString()}`;
 				if (this.throttleTimers.has(throttleKey)) {
 					continue; // Skip throttled
@@ -232,7 +232,7 @@ export default class EventRouter {
 					throttleKey,
 					setTimeout(() => {
 						this.throttleTimers.delete(throttleKey);
-					}, eventDef.throttle),
+					}, eventDefinition.throttle),
 				);
 			}
 

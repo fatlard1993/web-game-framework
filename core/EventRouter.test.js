@@ -145,12 +145,12 @@ describe('EventRouter', () => {
 			const calls = [];
 
 			router.use((data, context, next) => {
-				calls.push('mw1');
+				calls.push('middleware1');
 				return next();
 			});
 
 			router.use((data, context, next) => {
-				calls.push('mw2');
+				calls.push('middleware2');
 				return next();
 			});
 
@@ -160,7 +160,7 @@ describe('EventRouter', () => {
 
 			await router.emit('test', {});
 
-			expect(calls).toEqual(['mw1', 'mw2', 'handler']);
+			expect(calls).toEqual(['middleware1', 'middleware2', 'handler']);
 		});
 
 		test('should stop propagation if middleware returns false', async () => {

@@ -34,6 +34,7 @@ export default class ClickerGame extends Game {
 
 	/**
 	 * Serialize game state for clients
+	 * @returns {object} Client-safe game state
 	 */
 	toClient() {
 		return {
@@ -55,6 +56,7 @@ export default class ClickerGame extends Game {
 
 	/**
 	 * Serialize game state for persistence
+	 * @returns {object} Game state snapshot for saving
 	 */
 	toSaveState() {
 		return {
@@ -76,7 +78,7 @@ export default class ClickerGame extends Game {
 
 	/**
 	 * Lifecycle hook - called when player is added
-	 * @param player
+	 * @param {object} player - The player that joined
 	 */
 	onPlayerAdded(player) {
 		// Initialize player score
@@ -101,7 +103,7 @@ export default class ClickerGame extends Game {
 
 	/**
 	 * Lifecycle hook - called when player is removed
-	 * @param playerId
+	 * @param {string} playerId - ID of the player that left
 	 */
 	onPlayerRemoved(playerId) {
 		this.logger.info('Player removed', {
@@ -120,6 +122,7 @@ export default class ClickerGame extends Game {
 
 	/**
 	 * Start the game
+	 * @returns {object} Success flag or error message
 	 */
 	startGame() {
 		if (this.status === 'playing') {
@@ -159,7 +162,8 @@ export default class ClickerGame extends Game {
 
 	/**
 	 * Register a click from a player
-	 * @param playerId
+	 * @param {string} playerId - ID of the clicking player
+	 * @returns {object} Success flag or error message
 	 */
 	click(playerId) {
 		if (this.status !== 'playing') {

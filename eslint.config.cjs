@@ -22,6 +22,8 @@ module.exports = [
 				'error',
 				{ varsIgnorePattern: '^_', argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
 			],
+			// lowdb is installed, but its ESM-only exports map defeats eslint-plugin-import's resolver
+			'import/no-unresolved': [1, { ignore: ['bun', 'bun:test', String.raw`\.asText$`, '^lowdb'] }],
 			'spellcheck/spell-checker': [
 				'warn',
 				{
@@ -42,6 +44,7 @@ module.exports = [
 		},
 		rules: {
 			'no-console': 'off',
+			'jsdoc/check-param-names': ['warn', { checkDestructured: false }],
 			'compat/compat': 'off',
 		},
 	},

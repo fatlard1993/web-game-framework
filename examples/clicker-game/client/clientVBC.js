@@ -1,8 +1,8 @@
 /**
  * Clicker Game - VBC Client
- * Minimal implementation using vanilla-bean-components
+ * Minimal implementation using @vanilla-bean/components
  */
-import { Component, Button, Input, Dialog, Page } from 'vanilla-bean-components';
+import { Component, Button, Input, Dialog, Page } from '@vanilla-bean/components';
 
 // App state
 const state = {

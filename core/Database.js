@@ -23,7 +23,7 @@ import { JSONFile } from 'lowdb/node';
  */
 export default class Database extends Low {
 	/**
-	 * @param {object} options
+	 * @param {object} options - Database configuration
 	 * @param {string} options.filePath - Path to JSON file
 	 * @param {object} [options.logger] - Optional logger
 	 * @param {Function} [options.onReady] - Callback when database is ready
@@ -181,7 +181,7 @@ export default class Database extends Low {
 
 			/**
 			 * Update a record (merges with existing)
-			 * @param {object} options
+			 * @param {object} options - Update parameters
 			 * @param {string} options.id - Record ID
 			 * @param {object} options.update - Fields to update
 			 * @returns {object|boolean} Updated record or false if not found
@@ -228,7 +228,7 @@ export default class Database extends Low {
 
 			/**
 			 * Delete a record
-			 * @param {object} options
+			 * @param {object} options - Delete parameters
 			 * @param {string} options.id - Record ID
 			 * @returns {string|boolean} Deleted ID or false if not found
 			 */
@@ -268,7 +268,7 @@ export default class Database extends Low {
 
 			/**
 			 * Set a record (replaces existing)
-			 * @param {object} options
+			 * @param {object} options - Set parameters
 			 * @param {string} options.id - Record ID
 			 * @param {object} options.data - Record data
 			 * @returns {object} Set record

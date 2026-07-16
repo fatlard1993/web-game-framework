@@ -33,7 +33,7 @@ import EventRouter from './EventRouter.js';
  */
 export default class Game {
 	/**
-	 * @param {object} options
+	 * @param {object} options - Game configuration
 	 * @param {object} [options.saveState] - Previous game state to restore
 	 * @param {object} options.server - Server instance
 	 * @param {object} [options.logger] - Optional logger
@@ -94,6 +94,7 @@ export default class Game {
 	/**
 	 * Generate a unique game ID
 	 * Override this to use a custom ID generator
+	 * @returns {string} Unique game ID
 	 */
 	_generateId() {
 		// Simple fallback ID generator
