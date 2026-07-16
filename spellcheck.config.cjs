@@ -8,6 +8,7 @@ module.exports = {
 		'fatlard1993',
 		'gameplay',
 		'lowdb',
+		'microtask',
 		'multiplayer',
 		'namespacing',
 		'os',
