@@ -64,7 +64,7 @@
 	},
 	"dependencies": {
 		"lowdb": "^7.0.1",
-		"nanoid": "^5.1.16",
+		"nanoid": "^6.0.0",
 		"@vanilla-bean/components": "^2.0.1",
 		"@vanilla-bean/hypertether": "^1.0.1"
 	},
