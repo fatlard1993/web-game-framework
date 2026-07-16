@@ -1,6 +1,6 @@
 {
 	"name": "@fatlard1993/web-game-framework",
-	"version": "0.1.0-alpha.0",
+	"version": "0.1.0-alpha.1",
 	"type": "module",
 	"description": "Lightweight framework for building multiplayer web games with Bun and WebSockets",
 	"license": "MIT",
