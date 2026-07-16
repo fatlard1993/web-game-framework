@@ -35,7 +35,9 @@ export default class Database extends Low {
 
 		this.options = options;
 		this.collections = {};
+		this.isReady = false;
 		this._onReady = onReady;
+		this._readyCallbacks = [];
 
 		// Simple logger fallback
 		this.logger = logger || {
@@ -85,10 +87,14 @@ export default class Database extends Low {
 				collectionsLoaded: collectionNames.length - failed,
 			});
 
+			this.isReady = true;
+
 			// Call onReady callback
 			if (this._onReady) {
 				this._onReady(this);
 			}
+
+			this._readyCallbacks.splice(0).forEach(callback => callback(this));
 		} catch (error) {
 			this.logger.error('Database initialization failed', {
 				error: error.message,
@@ -97,6 +103,16 @@ export default class Database extends Low {
 			});
 			throw error;
 		}
+	}
+
+	/**
+	 * Register a callback for when the database is ready
+	 * Fires immediately if the database is already ready
+	 * @param {Function} callback - Receives the database instance
+	 */
+	onReady(callback) {
+		if (this.isReady) callback(this);
+		else this._readyCallbacks.push(callback);
 	}
 
 	/**
