@@ -86,8 +86,9 @@ export default class Game {
 		}
 
 		// Create initial save if this is a new game
+		// Deferred a microtask so subclass constructors finish initializing state before toSaveState runs
 		if (!saveState.id && server?.database) {
-			server.database.collections.games.create(this.toSaveState());
+			queueMicrotask(() => server.database.collections.games.create(this.toSaveState()));
 		}
 	}
 
