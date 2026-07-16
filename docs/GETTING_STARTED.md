@@ -52,8 +52,8 @@ bun server.js
 **Add custom routes (optional):**
 
 ```js
-const router = server => req => {
-	const url = new URL(req.url);
+const router = server => request => {
+	const url = new URL(request.url);
 
 	if (url.pathname === '/health') {
 		return new Response('OK');
@@ -312,11 +312,11 @@ const database = new Database({
 	},
 });
 
-const router = server => req => {
-	const url = new URL(req.url);
+const router = server => request => {
+	const url = new URL(request.url);
 
 	if (url.pathname === '/ws') {
-		const upgraded = server.httpServer.upgrade(req, {
+		const upgraded = server.httpServer.upgrade(request, {
 			data: { clientId: simpleId() },
 		});
 		if (upgraded) return;
@@ -329,13 +329,13 @@ const router = server => req => {
 	}
 
 	// Get all games
-	if (url.pathname === '/api/games' && req.method === 'GET') {
+	if (url.pathname === '/api/games' && request.method === 'GET') {
 		const games = Object.values(server.games).map(game => game.toClient());
 		return Response.json(games);
 	}
 
 	// Create new game
-	if (url.pathname === '/api/games' && req.method === 'POST') {
+	if (url.pathname === '/api/games' && request.method === 'POST') {
 		const game = new MyGame({ server, name: 'New Game' });
 		return Response.json(game.toClient());
 	}
@@ -408,7 +408,7 @@ new Create({
 
 **Requirements for direct import:**
 
-- `vanilla-bean-components` installed
+- `@vanilla-bean/components` installed
 - API routes: `/games`, `/games/:id`, `/games/:id/join`
 - Hash-based routing: `#/hub`, `#/join/:id`, `#/create`
 
@@ -418,8 +418,8 @@ When you copy components, customize them for your game:
 
 ```js
 // client/ui/GameRoom/Hub.js (customized)
-import { Component, styled } from 'vanilla-bean-components';
-import { GET } from 'vanilla-bean-components/request';
+import { Component, styled } from '@vanilla-bean/components';
+import { GET } from '@vanilla-bean/hypertether';
 
 const GameCard = styled(
 	Component,

@@ -18,7 +18,7 @@ import { onMessage } from './socket.js';
  *   console.log('Player event:', eventName, data);
  * });
  * ```
- * @param {object} options
+ * @param {object} options - Router configuration
  * @param {string} [options.gameId] - Filter messages by game ID
  * @param {object} [options.context] - Context object (e.g., gameContext)
  * @param {object} [options.logger] - Optional logger
@@ -56,7 +56,7 @@ export function createClientEventRouter({ gameId, context, logger } = {}) {
 
 /**
  * Create validation middleware for common patterns
- * @param {object} options
+ * @param {object} options - Validation configuration
  * @param {boolean} [options.requirePlayerId] - Require playerId field
  * @param {boolean} [options.requirePosition] - Require position {x, y} field
  * @param {Array<string>} [options.requiredFields] - Additional required fields
@@ -85,8 +85,8 @@ export function createValidationMiddleware(options = {}) {
 
 		// Check position
 		if (options.requirePosition) {
-			const pos = data.position;
-			if (!pos || typeof pos.x !== 'number' || typeof pos.y !== 'number') {
+			const { position } = data;
+			if (!position || typeof position.x !== 'number' || typeof position.y !== 'number') {
 				context.router.logger.warn?.('[EventRouter] Invalid or missing position', { event: context.eventName, data });
 				return false;
 			}
@@ -98,7 +98,7 @@ export function createValidationMiddleware(options = {}) {
 
 /**
  * Create logging middleware
- * @param {object} options
+ * @param {object} options - Logging configuration
  * @param {Array<string>} [options.include] - Only log these events
  * @param {Array<string>} [options.exclude] - Don't log these events
  * @param {Function} [options.filter] - Custom filter function
@@ -120,7 +120,7 @@ export function createLoggingMiddleware(options = {}) {
 		}
 
 		// Log the event
-		console.log(`[Event] ${context.eventName}`, data);
+		context.router.logger.log?.(`[Event] ${context.eventName}`, data);
 
 		return next();
 	};

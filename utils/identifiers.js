@@ -1,3 +1,4 @@
+/* eslint-disable spellcheck/spell-checker -- alphabet constants and sample IDs are not words */
 import { customAlphabet } from 'nanoid';
 
 /**

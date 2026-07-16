@@ -1,4 +1,4 @@
-// Note: randInt and randFromArray are available from vanilla-bean-components/utils
+// Note: randInt and randFromArray are available from @vanilla-bean/components/utils
 // We don't re-export them here to avoid ambiguous imports when both are used together
 import { randInt } from '@vanilla-bean/components/utils';
 
@@ -51,10 +51,13 @@ export const weightedChance = items => {
 
 	// Select item
 	const itemNames = Object.keys(items);
-	for (let x = 0; x < itemNames.length; ++x) {
-		sum += items[itemNames[x]];
-		if (percentChance <= sum) return itemNames[x];
+	for (let index = 0; index < itemNames.length - 1; ++index) {
+		sum += items[itemNames[index]];
+		if (percentChance <= sum) return itemNames[index];
 	}
+
+	// The last item is guaranteed since the weights sum to 100
+	return itemNames[itemNames.length - 1];
 };
 
 /**

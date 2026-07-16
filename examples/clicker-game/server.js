@@ -24,8 +24,8 @@ const database = new Database({
 });
 
 // Router for HTTP requests (WebSocket handled automatically)
-const router = server => async req => {
-	const url = new URL(req.url);
+const router = server => async request => {
+	const url = new URL(request.url);
 
 	// Serve static files in development
 	if (url.pathname === '/' || url.pathname === '/index.html') {
@@ -96,13 +96,13 @@ const router = server => async req => {
 	// API Routes
 
 	// GET /api/games - List all games
-	if (url.pathname === '/api/games' && req.method === 'GET') {
+	if (url.pathname === '/api/games' && request.method === 'GET') {
 		const games = Object.values(server.games).map(game => game.toClient());
 		return Response.json(games);
 	}
 
 	// POST /api/games - Create new game
-	if (url.pathname === '/api/games' && req.method === 'POST') {
+	if (url.pathname === '/api/games' && request.method === 'POST') {
 		try {
 			const game = new ClickerGame({
 				server,
@@ -126,7 +126,7 @@ const router = server => async req => {
 
 	// GET /api/games/:id - Get specific game
 	const gameMatch = url.pathname.match(/^\/api\/games\/([^/]+)$/);
-	if (gameMatch && req.method === 'GET') {
+	if (gameMatch && request.method === 'GET') {
 		const gameId = gameMatch[1];
 		const game = server.games[gameId];
 
@@ -145,7 +145,7 @@ const router = server => async req => {
 
 	// POST /api/games/:id/join - Join a game
 	const joinMatch = url.pathname.match(/^\/api\/games\/([^/]+)\/join$/);
-	if (joinMatch && req.method === 'POST') {
+	if (joinMatch && request.method === 'POST') {
 		const gameId = joinMatch[1];
 		const game = server.games[gameId];
 
@@ -160,7 +160,7 @@ const router = server => async req => {
 		}
 
 		try {
-			const body = await req.json();
+			const body = await request.json();
 			const playerName = body.playerName || 'Anonymous';
 
 			const player = game.addPlayer(playerName);
@@ -183,7 +183,7 @@ const router = server => async req => {
 
 	// DELETE /api/games/:id - Delete a game
 	const deleteMatch = url.pathname.match(/^\/api\/games\/([^/]+)$/);
-	if (deleteMatch && req.method === 'DELETE') {
+	if (deleteMatch && request.method === 'DELETE') {
 		const gameId = deleteMatch[1];
 		const game = server.games[gameId];
 

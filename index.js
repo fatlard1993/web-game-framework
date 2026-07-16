@@ -1,5 +1,5 @@
 /**
- * @fatlard1993/web-game-framework
+ * `@fatlard1993/web-game-framework`
  *
  * Lightweight framework for building multiplayer web games
  */

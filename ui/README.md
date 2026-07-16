@@ -4,7 +4,7 @@
 
 These components provide a starting point for game lobby UI. They're heavily opinionated and depend on:
 
-- `vanilla-bean-components` for UI primitives
+- `@vanilla-bean/components` for UI primitives
 - Client-side routing (hash-based)
 - Specific API structure
 
@@ -44,7 +44,7 @@ import { Hub, Join, Create } from '@fatlard1993/web-game-framework/ui/GameRoom';
 
 **Note**: Direct imports assume you have:
 
-- `vanilla-bean-components` installed
+- `@vanilla-bean/components` installed
 - API routes matching the expected structure
 - Hash-based routing (#/hub, #/join/:id, etc.)
 

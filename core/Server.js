@@ -13,18 +13,18 @@
  * const server = new Server({
  *   port: 3000,
  *   Game: MyGameClass,
- *   router: (server) => (req) => { ... }, // optional
+ *   router: (server) => (request) => { ... }, // optional
  * });
  * ```
  */
 export default class Server {
 	/**
-	 * @param {object} options
+	 * @param {object} options - Server configuration
 	 * @param {number} options.port - Port to listen on
 	 * @param {string} [options.hostname] - Hostname to bind to
 	 * @param {Function} [options.router] - Optional HTTP request router function
 	 * @param {string} [options.wsPath] - WebSocket upgrade path
-	 * @param {class} [options.Game] - Game class to instantiate
+	 * @param {Function} [options.Game] - Game class to instantiate
 	 * @param {object} [options.database] - Optional database instance
 	 * @param {object} [options.logger] - Optional logger (console-compatible)
 	 * @param {number} [options.verbosity] - Log verbosity level (0-3)
@@ -176,14 +176,14 @@ export default class Server {
 		const INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 		const logHealth = () => {
-			const mem = process.memoryUsage();
+			const memory = process.memoryUsage();
 			const uptime = process.uptime();
 
 			this.logger.info('Health check', {
 				uptime: `${Math.floor(uptime / 60)}m ${Math.floor(uptime % 60)}s`,
 				memory: {
-					rss: `${Math.round(mem.rss / 1024 / 1024)}MB`,
-					heap: `${Math.round(mem.heapUsed / 1024 / 1024)}MB`,
+					rss: `${Math.round(memory.rss / 1024 / 1024)}MB`,
+					heap: `${Math.round(memory.heapUsed / 1024 / 1024)}MB`,
 				},
 				connections: Object.keys(this.clients).length,
 				games: Object.keys(this.games).length,
@@ -204,12 +204,12 @@ export default class Server {
 	 * @returns {Function} Combined router function
 	 */
 	_createDefaultRouter(customRouter) {
-		return req => {
-			const url = new URL(req.url);
+		return request => {
+			const url = new URL(request.url);
 
 			// Handle WebSocket upgrade
 			if (url.pathname === this.wsPath) {
-				const upgraded = this.httpServer.upgrade(req, {
+				const upgraded = this.httpServer.upgrade(request, {
 					data: { clientId: this._generateClientId() },
 				});
 				if (upgraded) return; // WebSocket handled
@@ -217,7 +217,7 @@ export default class Server {
 
 			// Delegate to custom router if provided
 			if (customRouter) {
-				return customRouter(this)(req);
+				return customRouter(this)(request);
 			}
 
 			// Default 404 if no custom router
