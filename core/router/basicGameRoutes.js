@@ -12,6 +12,7 @@ import { requestMatch } from '../../utils/index.js';
  * - DELETE /games/:id - Delete game
  * @param {object} options - Configuration options
  * @param {object} options.logger - Optional logger with info/error methods (defaults to console)
+ * @param {string} [options.basePath] - Prefix for all routes (e.g. '/api')
  * @returns {Function} Router middleware function
  * @example
  * import { Server } from '@fatlard1993/web-game-framework';
@@ -25,19 +26,20 @@ import { requestMatch } from '../../utils/index.js';
  */
 export default function basicGameRoutes(options = {}) {
 	const logger = options.logger || console;
+	const basePath = options.basePath || '';
 
 	return async (request, server) => {
 		let match;
 
 		// GET /games - List all games
-		match = requestMatch('GET', '/games', request);
+		match = requestMatch('GET', `${basePath}/games`, request);
 		if (match) {
 			const games = Object.values(server.games).filter(game => game);
 			return Response.json(games.map(game => game.toClient()));
 		}
 
 		// GET /games/:gameId - Get game details
-		match = requestMatch('GET', '/games/:gameId', request);
+		match = requestMatch('GET', `${basePath}/games/:gameId`, request);
 		if (match) {
 			const game = server.games[match.gameId];
 			if (!game) {
@@ -47,7 +49,7 @@ export default function basicGameRoutes(options = {}) {
 		}
 
 		// POST /games - Create new game
-		match = requestMatch('POST', '/games', request);
+		match = requestMatch('POST', `${basePath}/games`, request);
 		if (match) {
 			try {
 				const body = await request.json();
@@ -67,7 +69,7 @@ export default function basicGameRoutes(options = {}) {
 		}
 
 		// POST /games/:gameId/join - Join game
-		match = requestMatch('POST', '/games/:gameId/join', request);
+		match = requestMatch('POST', `${basePath}/games/:gameId/join`, request);
 		if (match) {
 			const game = server.games[match.gameId];
 			if (!game) {
@@ -96,7 +98,7 @@ export default function basicGameRoutes(options = {}) {
 		}
 
 		// POST /games/:gameId/:playerId/exit - Exit game
-		match = requestMatch('POST', '/games/:gameId/:playerId/exit', request);
+		match = requestMatch('POST', `${basePath}/games/:gameId/:playerId/exit`, request);
 		if (match) {
 			const { gameId, playerId } = match;
 			const game = server.games[gameId];
@@ -122,7 +124,7 @@ export default function basicGameRoutes(options = {}) {
 		}
 
 		// DELETE /games/:gameId - Delete game
-		match = requestMatch('DELETE', '/games/:gameId', request);
+		match = requestMatch('DELETE', `${basePath}/games/:gameId`, request);
 		if (match) {
 			const game = server.games[match.gameId];
 			if (!game) {
