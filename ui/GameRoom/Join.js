@@ -81,6 +81,8 @@ export default class Join extends View {
 			return;
 		}
 
+		this.game = game.body;
+
 		if (playerId && game.body.players.some(({ id }) => id === playerId)) {
 			window.location.href = `#/play/${this.options.gameId}`;
 
