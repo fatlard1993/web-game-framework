@@ -1,7 +1,14 @@
 import { Component } from '@vanilla-bean/components';
 
 export default class Body extends Component {
+	static schema = {
+		// Parallax background asset; pass false for a plain body
+		backgroundImage: { default: 'img/background.svg' },
+	};
+
 	constructor(options = {}, ...children) {
+		const backgroundImage = options.backgroundImage ?? 'img/background.svg';
+
 		super(
 			{
 				...options,
@@ -11,6 +18,9 @@ export default class Body extends Component {
 					position: relative;
 					background-image: none;
 
+					${
+						backgroundImage
+							? `
 					&::before {
 						content: '';
 						position: absolute;
@@ -18,11 +28,14 @@ export default class Body extends Component {
 						left: -10%;
 						width: 120%;
 						height: 120%;
-						background-image: url('img/background.svg');
+						background-image: url('${backgroundImage}');
 						background-size: cover;
 						background-position: center;
 						z-index: 0;
 						animation: parallax-drift 120s ease-in-out infinite;
+					}
+					`
+							: ''
 					}
 
 					& > * {

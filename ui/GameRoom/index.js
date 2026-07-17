@@ -1,7 +1,7 @@
 /**
  * GameRoom UI components
  *
- * These are reference implementations - copy and customize for your game
+ * Extend these in your game: pass options for the declared schema hooks, or subclass to override behavior
  */
 export { default as Hub } from './Hub.js';
 export { default as Join } from './Join.js';

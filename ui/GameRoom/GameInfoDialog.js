@@ -3,6 +3,10 @@ import { Component, Dialog, List, Label } from '@vanilla-bean/components';
 import { deleteGame } from '../../client/index.js';
 
 export default class GameInfoDialog extends Dialog {
+	static schema = {
+		game: {},
+	};
+
 	constructor(options = {}) {
 		super({
 			size: 'standard',

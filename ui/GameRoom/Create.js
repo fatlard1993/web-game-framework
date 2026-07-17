@@ -5,6 +5,13 @@ import { createGame } from '../../client/index.js';
 // Note: ConsoleContainer import removed - game implementation provides this
 
 export default class Create extends View {
+	static schema = {
+		formData: {},
+		formInputs: {},
+		containerComponent: {},
+		containerText: {},
+	};
+
 	constructor(options, ...children) {
 		super(
 			{

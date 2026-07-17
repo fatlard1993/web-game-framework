@@ -6,18 +6,25 @@ import GameInfoDialog from './GameInfoDialog.js';
 export default class GameInfoPopover extends (styled.Popover`
 	flex-direction: column;
 `) {
+	static schema = {
+		gameId: {},
+		infoRows: {
+			// Games override this to show their own rows (world, stage, packs, ...)
+			get default() {
+				return game => [`Game: ${game.name}`, `Players: ${game.players.length}`];
+			},
+		},
+	};
+
 	build() {
+		super.build();
 		this._init();
 	}
 
 	async _init() {
 		const game = (await getGame(this.options.gameId)).body;
 
-		if (game.world?.name) {
-			new Component({ content: ` - ${game.world.name} - `, appendTo: this });
-		}
-		new Component({ content: `Game: ${game.name}`, appendTo: this });
-		new Component({ content: `Players: ${game.players.length}`, appendTo: this });
+		this.options.infoRows(game).forEach(content => new Component({ content, appendTo: this }));
 		new Button({
 			content: 'More',
 			appendTo: this,
