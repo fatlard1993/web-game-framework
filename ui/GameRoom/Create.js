@@ -29,13 +29,7 @@ export default class Create extends View {
 					right: [
 						new Button({
 							textContent: options.toolbar?.createText || 'Create Game',
-							onPointerPress: async () => {
-								if (this.form.hasErrors()) return;
-
-								const game = (await createGame({ body: { ...this.form.options.data } })).body;
-
-								window.location.href = `#/join/${game.id}`;
-							},
+							onPointerPress: () => this.create(),
 						}),
 					],
 				},
@@ -47,6 +41,26 @@ export default class Create extends View {
 	build() {
 		super.build();
 		this._init();
+	}
+
+	/**
+	 * Serialize form data for the create request; override to transform game-specific fields
+	 * @returns {object} The request body
+	 */
+	createBody() {
+		return { ...this.form.options.data };
+	}
+
+	/**
+	 * Validate and submit the form, then navigate to the new game's join page
+	 * Override to add game-specific validation before calling super.create()
+	 */
+	async create() {
+		if (this.form.hasErrors()) return;
+
+		const game = (await createGame({ body: this.createBody() })).body;
+
+		window.location.href = `#/join/${game.id}`;
 	}
 
 	_init() {

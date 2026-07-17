@@ -13,6 +13,7 @@ export default class Hub extends View {
 		gamesFoundText: {},
 		gamesFoundTextFn: {},
 		buttons: {},
+		popoverOptions: {},
 	};
 
 	constructor(options, ...children) {
@@ -127,7 +128,14 @@ export default class Hub extends View {
 							if (this.gamePopover) {
 								this.gamePopover.elem.remove();
 								this.gamePopover = null;
-							} else this.gamePopover = new GameInfoPopover({ x: event.clientX, y: event.clientY, gameId: id });
+							} else {
+								this.gamePopover = new GameInfoPopover({
+									x: event.clientX,
+									y: event.clientY,
+									gameId: id,
+									...this.options.popoverOptions,
+								});
+							}
 						},
 					}),
 					new Link({

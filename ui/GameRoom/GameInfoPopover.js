@@ -14,6 +14,12 @@ export default class GameInfoPopover extends (styled.Popover`
 				return game => [`Game: ${game.name}`, `Players: ${game.players.length}`];
 			},
 		},
+		dialogComponent: {
+			// Games override this with their own detail dialog
+			get default() {
+				return GameInfoDialog;
+			},
+		},
 	};
 
 	build() {
@@ -32,7 +38,7 @@ export default class GameInfoPopover extends (styled.Popover`
 			onPointerPress: () => {
 				this.elem.remove();
 
-				new GameInfoDialog({ game });
+				new this.options.dialogComponent({ game });
 			},
 		});
 	}
