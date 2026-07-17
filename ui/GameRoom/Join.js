@@ -4,6 +4,16 @@ import { View } from '../layout/index.js';
 import { getGame, joinGame } from '../../client/index.js';
 
 export default class Join extends View {
+	static schema = {
+		gameId: {},
+		formData: {},
+		formInputs: {},
+		containerComponent: {},
+		containerText: {},
+		containerTextProvider: {},
+		playUrl: {},
+	};
+
 	constructor(options, ...children) {
 		super(
 			{
@@ -40,7 +50,7 @@ export default class Join extends View {
 								localStorage.setItem(this.options.gameId, join.body.id);
 								localStorage.setItem('lastName', join.body.name);
 
-								const playUrl = options.playUrl || `#/play/${this.options.gameId}`;
+								const playUrl = this.options.playUrl || `#/play/${this.options.gameId}`;
 								window.location.href = playUrl;
 							},
 						}),

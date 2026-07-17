@@ -3,6 +3,11 @@ import Toolbar from './Toolbar';
 import Body from './Body';
 
 export default class View extends BaseView {
+	static schema = {
+		toolbar: {},
+		body: {},
+	};
+
 	build() {
 		this._toolbar = new Toolbar({ appendTo: this, ...this.options.toolbar });
 
