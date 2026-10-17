@@ -15,7 +15,7 @@ export default class GameInfoDialog extends Dialog {
 				'Close',
 				{
 					textContent: 'Delete',
-					style: ({ colors }) => ({ background: colors.red }),
+					styles: ({ colors }) => ({ background: colors.red }),
 				},
 				'Join',
 			],
