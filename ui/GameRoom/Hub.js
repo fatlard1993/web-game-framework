@@ -35,9 +35,8 @@ export default class Hub extends View {
 			...children,
 		);
 
-		// Dismiss on pointerdown: onPointerPress handlers fire on pointerdown, so their
-		// stopPropagation can shield the popover toggle from this handler
-		this.options.onPointerDown = () => {
+		// A press anywhere else dismisses the popover; the list's buttons stop their press from reaching here
+		this.options.onPointerPress = () => {
 			if (this.gamePopover) {
 				this.gamePopover.elem.remove();
 				this.gamePopover = null;
