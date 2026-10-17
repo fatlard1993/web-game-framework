@@ -1,13 +1,16 @@
 import { Component } from '@vanilla-bean/components';
 
 export default class Body extends Component {
+	/** The parallax background every Body gets unless it passes its own; none until a game sets one at startup */
+	static backgroundImage = null;
+
 	static schema = {
-		// Parallax background asset; pass false for a plain body
-		backgroundImage: { default: 'img/background.svg' },
+		// A parallax background asset for this Body, or false for none whatever the game sets
+		backgroundImage: {},
 	};
 
 	constructor(options = {}, ...children) {
-		const backgroundImage = options.backgroundImage ?? 'img/background.svg';
+		const backgroundImage = options.backgroundImage ?? Body.backgroundImage;
 
 		super(
 			{

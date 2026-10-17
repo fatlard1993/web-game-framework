@@ -18,7 +18,7 @@ Rather than trying to be a universal UI kit, these components serve as **templat
 
 - [View.js](layout/View.js) - Base view with toolbar + body
 - [Toolbar.js](layout/Toolbar.js) - Top navigation bar
-- [Body.js](layout/Body.js) - Content area with styled background
+- [Body.js](layout/Body.js) - Content area; set `Body.backgroundImage` at startup for a parallax background behind every view
 
 ### GameRoom Components
 
