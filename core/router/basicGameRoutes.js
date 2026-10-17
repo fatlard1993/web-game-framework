@@ -53,7 +53,7 @@ export default function basicGameRoutes(options = {}) {
 		if (match) {
 			try {
 				const body = await request.json();
-				const game = new server.Game({ ...body, server });
+				const game = server.createGame(body);
 
 				logger.info?.('Game created', { gameId: game.id, name: game.name }) ||
 					console.log('[info] Game created', { gameId: game.id, name: game.name });

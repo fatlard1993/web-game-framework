@@ -86,9 +86,12 @@ export default class Game {
 		}
 
 		// Create initial save if this is a new game
-		// Deferred a microtask so subclass constructors finish initializing state before toSaveState runs
+		// Deferred a microtask so subclass constructors finish initializing state before toSaveState runs; a game whose
+		// construction failed has been unregistered by then, and is not saved
 		if (!saveState.id && server?.database) {
-			queueMicrotask(() => server.database.collections.games.create(this.toSaveState()));
+			queueMicrotask(() => {
+				if (server.games[this.id] === this) server.database.collections.games.create(this.toSaveState());
+			});
 		}
 	}
 

@@ -138,17 +138,56 @@ export default class Server {
 		// Load games from database if available
 		if (database && Game) {
 			database.onReady?.(() => {
-				const savedGames = database.collections?.games?.read() || {};
-				Object.values(savedGames).forEach(saveState => {
-					new Game({ saveState, server: this });
-				});
-				this.logger.info(`Loaded ${Object.keys(savedGames).length} games from database`);
+				const savedGames = Object.values(database.collections?.games?.read() || {});
+				let loaded = 0;
+
+				// One record that can't be restored skips that game, not the rest of them, nor the server
+				for (const saveState of savedGames) {
+					try {
+						this._constructGame({ saveState });
+						loaded++;
+					} catch (error) {
+						this.logger.warning('Skipping a saved game that could not be restored', {
+							gameId: saveState?.id,
+							error: error.message,
+						});
+					}
+				}
+
+				this.logger.info(`Loaded ${loaded} of ${savedGames.length} games from database`);
 			});
 		}
 
 		// Start health monitoring if logger supports it
 		if (verbosity >= 1) {
 			this.startHealthMonitoring();
+		}
+	}
+
+	/**
+	 * Create a new game. When its constructor throws, nothing of it stays registered or gets saved.
+	 * @param {object} options - Game options
+	 * @returns {object} The new game
+	 */
+	createGame(options) {
+		return this._constructGame(options);
+	}
+
+	/**
+	 * Construct a game, undoing what a failed construction registered: the base Game constructor registers the game
+	 * before a subclass constructor runs, so one that throws would otherwise leave a broken game listed.
+	 * @param {object} options - Game options
+	 * @returns {object} The constructed game
+	 */
+	_constructGame(options) {
+		const registered = new Set(Object.keys(this.games));
+
+		try {
+			return new this.Game({ ...options, server: this });
+		} catch (error) {
+			for (const id of Object.keys(this.games)) if (!registered.has(id)) delete this.games[id];
+
+			throw error;
 		}
 	}
 
