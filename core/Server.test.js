@@ -2,6 +2,8 @@ import os from 'os';
 import path from 'path';
 import fs from 'fs';
 
+import { hotReload } from '@vanilla-bean/components/app';
+
 import Server from './Server.js';
 import Database from './Database.js';
 
@@ -51,5 +53,52 @@ describe('Server database option', () => {
 		server = new Server({ port: 0, logger: quietLogger });
 
 		expect(server.database).toBeUndefined();
+	});
+});
+
+describe('Server sockets', () => {
+	let server;
+	let directory;
+
+	beforeAll(async () => {
+		directory = fs.mkdtempSync(path.join(os.tmpdir(), 'server-test-'));
+		fs.writeFileSync(path.join(directory, 'index.js'), 'globalThis.loaded = true;\n');
+		await hotReload.watch({ entrypoints: [path.join(directory, 'index.js')], outdir: path.join(directory, 'build') });
+		server = new Server({ port: 0, logger: quietLogger });
+	});
+
+	afterAll(() => {
+		server.httpServer.stop(true);
+		hotReload.stop();
+		fs.rmSync(directory, { recursive: true, force: true });
+	});
+
+	const connect = async socketPath => {
+		const socket = new WebSocket(`ws://localhost:${server.port}${socketPath}`);
+
+		await new Promise((resolve, reject) => {
+			socket.addEventListener('open', resolve);
+			socket.addEventListener('error', reject);
+		});
+		await new Promise(resolve => setTimeout(resolve, 50));
+
+		return socket;
+	};
+
+	test('a game socket is a client', async () => {
+		const socket = await connect('/ws');
+
+		expect(Object.keys(server.clients)).toHaveLength(1);
+
+		socket.close();
+		await new Promise(resolve => setTimeout(resolve, 50));
+	});
+
+	test('a page reload socket is not a game client', async () => {
+		const socket = await connect('/hotReload');
+
+		expect(Object.keys(server.clients)).toHaveLength(0);
+
+		socket.close();
 	});
 });

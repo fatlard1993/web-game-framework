@@ -1,4 +1,4 @@
-import { requestMatch } from '../../utils/index.js';
+import { requestMatch } from '@vanilla-bean/components/app';
 
 /**
  * Basic game CRUD routes for web-game-framework

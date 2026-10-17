@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { debounce, Notify } from '@vanilla-bean/components';
+import { Notify } from '@vanilla-bean/components';
 
 /**
  * WebSocket wrapper with automatic reconnection and listener management
@@ -7,7 +7,6 @@ import { debounce, Notify } from '@vanilla-bean/components';
  * Features:
  * - Automatic reconnection with exponential backoff
  * - Connection status notifications
- * - Hot reload in development mode
  * - Message listener tracking (survives reconnections)
  * @example
  * ```js
@@ -29,11 +28,11 @@ const messageListeners = new Set();
 
 /**
  * Create WebSocket connection
- * @param {string} [url] - Optional WebSocket URL (default: ws://current-host/ws)
+ * @param {string} [url] - Optional WebSocket URL (default: the current host's /ws, over wss on https pages)
  * @returns {WebSocket} The newly created socket
  */
 const createSocket = url => {
-	const wsUrl = url || `ws://${window.location.host}/ws`;
+	const wsUrl = url || `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`;
 	socket = new WebSocket(wsUrl);
 
 	socket.addEventListener('open', () => {
@@ -140,23 +139,6 @@ export const onMessage = callback => {
 		socket.removeEventListener('message', listener);
 	};
 };
-
-// Hot reload in development
-if (process.env.NODE_ENV === 'development') {
-	const debouncedReload = debounce(() => {
-		console.log('[dev] Hot reload triggered');
-		window.location.reload();
-	}, 1000);
-
-	const hotReloadListener = event => {
-		if (event.data === 'hotReload') {
-			debouncedReload();
-		}
-	};
-
-	messageListeners.add(hotReloadListener);
-	socket.addEventListener('message', hotReloadListener);
-}
 
 /**
  * Socket wrapper with getters for current socket instance

@@ -8,7 +8,7 @@ A lightweight, batteries-included framework for building multiplayer web games w
 - **WebSocket-based multiplayer** - Real-time communication out of the box
 - **Plugin architecture** - Opt-in features keep the core minimal
 - **Optional persistence** - Built-in save/load with JSON file database
-- **Hot reload development** - Auto-refresh clients during development
+- **Hot reload development** - Pages reload after each build, with `hotReload` from `@vanilla-bean/components/app`
 - **Reference UI components** - Lobby components you copy and customize
 - **Battle-tested** - Powers void-driller, sorcery-and-savagery, and humanity games
 
@@ -216,12 +216,12 @@ See [EventRouter.js](./core/EventRouter.js) source for full API.
 
 | Module | Purpose | Key Features |
 | --- | --- | --- |
-| **[Server](./core/Server.js)** | WebSocket server with Bun | Client tracking, broadcasting, hot reload, health |
+| **[Server](./core/Server.js)** | WebSocket server with Bun | Client tracking, broadcasting, hot reload sockets, health |
 | **[Game](./core/Game.js)** | Base game state management | Player management, save/load, broadcasting hooks |
 | **[EventRouter](./core/EventRouter.js)** | Event-based message routing | Validation, middleware, wildcards, throttling |
 | **[Database](./core/Database.js)** | JSON file persistence | Collection-based CRUD, async init, auto-save |
 | **[Players](./core/Players.js)** | Extended Map for player data | Convenience `update()` method |
-| **[socket](./client/socket.js)** | Client WebSocket wrapper | Auto-reconnection, listener tracking, hot reload |
+| **[socket](./client/socket.js)** | Client WebSocket wrapper | Auto-reconnection, listener tracking |
 | **[gameContext](./client/gameContext.js)** | Reactive game state container | Player management, `currentPlayer` access |
 | **[utils](./utils/)** | Helper functions | ID generation, random, validation |
 | **[UI components](./ui/README.md)** | Optional lobby UI (copy & customize) | Layout, GameRoom views (Hub, Join, Create) |
@@ -252,15 +252,17 @@ const server = new Server({
 // Broadcast to all connected clients
 server.socketBroadcast({ type: 'announcement', message: 'Hello!' });
 
-// Hot reload clients during development
-server.reloadClients();
+// Development: build the client and reload pages after each rebuild
+import { hotReload } from '@vanilla-bean/components/app';
+
+if (process.env.NODE_ENV === 'development') await hotReload.watch();
 ```
 
 **Features:**
 
 - WebSocket client connection tracking
 - Broadcasting to all clients
-- Hot reload in development mode
+- Accepts the page reload sockets of `hotReload` (from `@vanilla-bean/components/app`)
 - Health monitoring with periodic stats
 - Optional database integration
 - Optional Game class integration
@@ -384,7 +386,7 @@ cleanup();
 
 - Automatic reconnection with exponential backoff (3 attempts)
 - Connection status notifications (requires `Notify` from `@vanilla-bean/components`)
-- Hot reload in development mode
+- No page reload of its own: import `@vanilla-bean/components/app/reloadOnBuild` in the client for that
 - Listener tracking survives reconnections
 
 **[Full Socket API Documentation →](./docs/API.md#client-socket)**

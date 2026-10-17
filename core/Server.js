@@ -1,3 +1,5 @@
+import { hotReload } from '@vanilla-bean/components/app';
+
 import Database from './Database.js';
 
 /**
@@ -7,7 +9,7 @@ import Database from './Database.js';
  * - Automatic WebSocket upgrade (at /ws by default)
  * - WebSocket client tracking
  * - Broadcasting to all clients
- * - Hot reload in development
+ * - Takes the page reload sockets of `hotReload` (from `@vanilla-bean/components/app`)
  * - Optional health monitoring
  * - Optional database integration
  * @example
@@ -73,6 +75,8 @@ export default class Server {
 			fetch: defaultRouter,
 			websocket: {
 				open: socket => {
+					if (socket.data.hotReload) return hotReload.websocket.open(socket);
+
 					const clientId = socket.data.clientId;
 					this.clients[clientId] = socket;
 					this.logger.info('WebSocket connected', {
@@ -86,6 +90,8 @@ export default class Server {
 					}
 				},
 				close: (socket, code, reason) => {
+					if (socket.data.hotReload) return hotReload.websocket.close(socket);
+
 					const clientId = socket.data.clientId;
 					delete this.clients[clientId];
 					this.logger.info('WebSocket closed', {
@@ -169,16 +175,6 @@ export default class Server {
 	}
 
 	/**
-	 * Reload all connected clients (hot reload)
-	 */
-	reloadClients() {
-		Object.entries(this.clients).forEach(([clientId, socket]) => {
-			this.logger.info(`[dev] Reloading client ${clientId}`);
-			socket.send('hotReload');
-		});
-	}
-
-	/**
 	 * Start periodic health monitoring
 	 * Logs system stats every 5 minutes
 	 */
@@ -215,6 +211,8 @@ export default class Server {
 	 */
 	_createDefaultRouter(customRouter) {
 		return request => {
+			if (hotReload.upgrade(request, this.httpServer)) return;
+
 			const url = new URL(request.url);
 
 			// Handle WebSocket upgrade

@@ -3,16 +3,8 @@ const vanillaBeanEslint = require('@vanilla-bean/components/eslint.config.cjs');
 const vanillaBeanSpellcheck = require('@vanilla-bean/components/spellcheck.config.cjs');
 const localSpellcheck = require('./spellcheck.config.cjs');
 
-const fixedVanillaBeanEslint = vanillaBeanEslint.map(config => {
-	if (config.plugins?.unicorn) {
-		const { unicorn: _unicorn, ...otherPlugins } = config.plugins;
-		return { ...config, plugins: otherPlugins };
-	}
-	return config;
-});
-
 module.exports = [
-	...fixedVanillaBeanEslint,
+	...vanillaBeanEslint,
 	{
 		ignores: ['**/dist'],
 	},

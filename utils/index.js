@@ -3,4 +3,3 @@
  */
 export * from './identifiers.js';
 export * from './random.js';
-export { default as requestMatch } from './requestMatch.js';
