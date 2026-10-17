@@ -1,33 +1,27 @@
 const globals = require('globals');
-const vanillaBeanEslint = require('@vanilla-bean/components/eslint.config.cjs');
-const vanillaBeanSpellcheck = require('@vanilla-bean/components/spellcheck.config.cjs');
-const localSpellcheck = require('./spellcheck.config.cjs');
+const jsdoc = require('eslint-plugin-jsdoc');
+
+// The framework is a library: its JSDoc stays required everywhere but the examples, as in the components library
+const jsdocRequirements = Object.fromEntries(
+	Object.entries(jsdoc.configs['flat/recommended'].rules).filter(([name]) => name.startsWith('jsdoc/require-')),
+);
 
 module.exports = [
-	...vanillaBeanEslint,
+	...require('@vanilla-bean/components/eslint.app.config.cjs'),
 	{
 		ignores: ['**/dist'],
 	},
 	{
 		rules: {
+			...jsdocRequirements,
 			'no-unused-vars': [
 				'error',
 				{ varsIgnorePattern: '^_', argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
 			],
-			// lowdb is installed, but its ESM-only exports map defeats eslint-plugin-import's resolver
-			'import/no-unresolved': [1, { ignore: ['bun', 'bun:test', String.raw`\.asText$`, '^lowdb'] }],
-			'spellcheck/spell-checker': [
-				'warn',
-				{
-					...vanillaBeanSpellcheck,
-					...localSpellcheck,
-					skipWords: [...vanillaBeanSpellcheck.skipWords, ...localSpellcheck.skipWords],
-				},
-			],
 		},
 	},
 	{
-		files: ['core/**/*', 'plugins/**/*', 'utils/**/*', 'examples/*/server.js', 'examples/*/build.js'],
+		files: ['core/**/*', 'utils/**/*', 'examples/*/server.js', 'examples/*/build.js'],
 		languageOptions: {
 			globals: {
 				...globals.node,
