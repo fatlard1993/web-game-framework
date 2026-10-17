@@ -1,4 +1,4 @@
-import { Link, Button, Notify, Form, randInt } from '@vanilla-bean/components';
+import { Link, Button, Notify, Form } from '@vanilla-bean/components';
 
 import { View } from '../layout/index.js';
 import { getGame, joinGame } from '../../client/index.js';
@@ -42,8 +42,6 @@ export default class Join extends View {
 									return new Notify({
 										type: 'error',
 										content: join.body?.message || join.body?.error || String(join.body),
-										x: randInt(12, window.innerWidth - 12),
-										y: randInt(72, window.innerHeight / 3),
 									});
 								}
 

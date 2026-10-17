@@ -1,4 +1,4 @@
-import { Link, Button, Notify, copyToClipboard, randInt } from '@vanilla-bean/components';
+import { Link, Button, Notify, copyToClipboard } from '@vanilla-bean/components';
 
 import { View } from '../layout/index.js';
 import { getGames, onMessage } from '../../client/index.js';
@@ -56,13 +56,7 @@ export default class Hub extends View {
 		const games = await getGames();
 
 		if (games.response.status !== 200) {
-			// TODO limit to center area
-			new Notify({
-				type: 'error',
-				content: games.body?.message || games.response.statusText,
-				x: randInt(12, window.innerWidth - 12),
-				y: randInt(72, window.innerHeight / 3),
-			});
+			new Notify({ type: 'error', content: games.body?.message || games.response.statusText });
 			return;
 		}
 
