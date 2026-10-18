@@ -20,6 +20,10 @@ Rather than trying to be a universal UI kit, these components serve as **templat
 - [Toolbar.js](layout/Toolbar.js) - Top navigation bar
 - [Body.js](layout/Body.js) - Content area; set `Body.backgroundImage` at startup for a parallax background behind every view
 
+### Watch Screen
+
+- [QRCode.js](QRCode.js) - A canvas drawing a QR code of `src`, for a watch screen's join link
+
 ### GameRoom Components
 
 - [Hub.js](GameRoom/Hub.js) - Game list/lobby

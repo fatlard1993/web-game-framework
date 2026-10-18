@@ -6,3 +6,4 @@
  */
 export * from './GameRoom/index.js';
 export * from './layout/index.js';
+export { default as QRCode } from './QRCode.js';

@@ -63,7 +63,8 @@
 	"dependencies": {
 		"lowdb": "^7.0.1",
 		"nanoid": "^6.0.0",
-		"@vanilla-bean/components": "^4.3.1",
+		"qrcode": "^1.5.4",
+		"@vanilla-bean/components": "^4.4.0",
 		"@vanilla-bean/hypertether": "^1.0.3"
 	},
 	"devDependencies": {
