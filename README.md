@@ -261,6 +261,7 @@ if (process.env.NODE_ENV === 'development') await hotReload.watch();
 **Features:**
 
 - WebSocket client connection tracking
+- Refuses sockets and writes sent by another site's page (`sameOrigin` from `@vanilla-bean/components/app`), before the app's router or the game socket hears them
 - Broadcasting to all clients
 - Accepts the page reload sockets of `hotReload` (from `@vanilla-bean/components/app`)
 - Health monitoring with periodic stats

@@ -74,12 +74,14 @@ describe('Server sockets', () => {
 		fs.rmSync(directory, { recursive: true, force: true });
 	});
 
+	// The ws client, not the test DOM's WebSocket, which sends the test page's origin: another site, to this server
 	const connect = async socketPath => {
-		const socket = new WebSocket(`ws://localhost:${server.port}${socketPath}`);
+		const { WebSocket: NodeSocket } = await import('ws');
+		const socket = new NodeSocket(`ws://localhost:${server.port}${socketPath}`);
 
 		await new Promise((resolve, reject) => {
-			socket.addEventListener('open', resolve);
-			socket.addEventListener('error', reject);
+			socket.on('open', resolve);
+			socket.on('error', reject);
 		});
 		await new Promise(resolve => setTimeout(resolve, 50));
 
@@ -92,6 +94,39 @@ describe('Server sockets', () => {
 		expect(Object.keys(server.clients)).toHaveLength(1);
 
 		socket.close();
+		await new Promise(resolve => setTimeout(resolve, 50));
+	});
+
+	test("another site's page can't open a game socket, or write; a socket from no browser can", async () => {
+		const { WebSocket: NodeSocket } = await import('ws');
+		const opens = origin =>
+			new Promise(resolve => {
+				const socket = new NodeSocket(`ws://localhost:${server.port}/ws`, { headers: origin ? { origin } : {} });
+
+				socket.on('open', () => (socket.close(), resolve(true)));
+				socket.on('error', () => resolve(false));
+			});
+
+		expect(await opens(`http://localhost:${server.port}`)).toBe(true);
+		expect(await opens()).toBe(true);
+
+		// The refusal is a Response the server makes, so Bun's own, not the test DOM's
+		const DomResponse = globalThis.Response;
+
+		globalThis.Response = (await Bun.fetch('data:,')).constructor;
+
+		try {
+			expect(await opens('https://evil.example')).toBe(false);
+
+			const write = await Bun.fetch(`http://localhost:${server.port}/games`, {
+				method: 'POST',
+				headers: { origin: 'https://evil.example' },
+			});
+
+			expect(write.status).toBe(403);
+		} finally {
+			globalThis.Response = DomResponse;
+		}
 		await new Promise(resolve => setTimeout(resolve, 50));
 	});
 

@@ -1,4 +1,4 @@
-import { hotReload } from '@vanilla-bean/components/app';
+import { hotReload, sameOrigin } from '@vanilla-bean/components/app';
 
 import Database from './Database.js';
 
@@ -250,6 +250,10 @@ export default class Server {
 	 */
 	_createDefaultRouter(customRouter) {
 		return request => {
+			// A socket opened, or a write sent, by another site's page in a player's browser: refused before anything
+			// hears it. WebSockets get no CORS protection of their own.
+			if (!sameOrigin(request)) return new Response('Cross-origin request refused', { status: 403 });
+
 			if (hotReload.upgrade(request, this.httpServer)) return;
 
 			const url = new URL(request.url);
