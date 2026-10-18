@@ -384,10 +384,10 @@ cleanup();
 
 **Features:**
 
-- Automatic reconnection with exponential backoff (3 attempts)
-- Connection status notifications (requires `Notify` from `@vanilla-bean/components`)
+- Reconnects for as long as the page is open, backing off to every 10 seconds, and at once when the page comes back into view or the network returns
+- One notice when the connection is lost and one when it's restored (requires `Notify` from `@vanilla-bean/components`)
 - No page reload of its own: import `@vanilla-bean/components/app/reloadOnBuild` in the client for that
-- Listener tracking survives reconnections
+- Listeners, from `onMessage` or `socket.addEventListener`, carry over to each new connection
 
 **[Full Socket API Documentation →](./docs/API.md#client-socket)**
 

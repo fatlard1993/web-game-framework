@@ -5,8 +5,8 @@ import { Notify } from '@vanilla-bean/components';
  * WebSocket wrapper with automatic reconnection and listener management
  *
  * Features:
- * - Automatic reconnection with exponential backoff
- * - Connection status notifications
+ * - Reconnection for as long as the page is open, backing off to every 10s, and at once when it's back in view
+ * - One notice when the connection is lost, and one when it's restored
  * - Message listener tracking (survives reconnections)
  * @example
  * ```js
@@ -21,96 +21,72 @@ import { Notify } from '@vanilla-bean/components';
  */
 
 let socket;
-let reconnectAttempts = 0;
-const maxReconnectAttempts = 3;
-const reconnectDelay = 3000; // 3 seconds
+let wsUrl;
+let retry;
+let delay = 1000;
+let lost = null;
+const MAX_DELAY = 10_000;
 const messageListeners = new Set();
+// Listeners added through the wrapper, carried onto each new socket like the message listeners
+const socketListeners = new Set();
+
+const notify = options => {
+	if (typeof Notify === 'undefined') return;
+
+	return new Notify({ x: window.innerWidth / 2, y: 100, ...options });
+};
+
+// Now, rather than after the backoff: a page back in view, or a network back up, shouldn't wait out a timer
+const reconnectNow = () => {
+	if (socket?.readyState === WebSocket.OPEN || socket?.readyState === WebSocket.CONNECTING) return;
+
+	clearTimeout(retry);
+	delay = 1000;
+	createSocket(wsUrl);
+};
 
 /**
- * Create WebSocket connection
+ * Create WebSocket connection. A lost connection is retried for as long as the page is open, backing off to every 10
+ * seconds, and at once when the page comes back into view or the network comes back.
  * @param {string} [url] - Optional WebSocket URL (default: the current host's /ws, over wss on https pages)
  * @returns {WebSocket} The newly created socket
  */
 const createSocket = url => {
-	const wsUrl = url || `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`;
+	wsUrl = url || `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`;
 	socket = new WebSocket(wsUrl);
+
+	messageListeners.forEach(listener => socket.addEventListener('message', listener));
+	socketListeners.forEach(([type, listener, options]) => socket.addEventListener(type, listener, options));
 
 	socket.addEventListener('open', () => {
 		console.log('WebSocket connected');
+		delay = 1000;
 
-		// Re-attach all message listeners to new socket
-		messageListeners.forEach(listener => {
-			socket.addEventListener('message', listener);
-		});
-
-		// Show restoration message if reconnected
-		if (reconnectAttempts > 0 && typeof Notify !== 'undefined') {
-			new Notify({
-				type: 'success',
-				content: 'Connection restored.',
-				timeout: 2000,
-				x: window.innerWidth / 2,
-				y: 100,
-			});
-		}
-
-		reconnectAttempts = 0;
-	});
-
-	socket.addEventListener('error', error => {
-		console.error('WebSocket error:', error);
-		if (typeof Notify !== 'undefined') {
-			new Notify({
-				type: 'error',
-				content: 'Connection error. Attempting to reconnect...',
-				timeout: 3000,
-				x: window.innerWidth / 2,
-				y: 100,
-			});
+		if (lost) {
+			if (lost.elem?.isConnected) lost.destroy();
+			lost = null;
+			notify({ type: 'success', content: 'Connection restored.', timeout: 2000 });
 		}
 	});
+
+	socket.addEventListener('error', error => console.error('WebSocket error:', error));
 
 	socket.addEventListener('close', event => {
 		console.error('WebSocket closed:', event);
 
-		if (reconnectAttempts < maxReconnectAttempts) {
-			reconnectAttempts++;
-			const delay = reconnectDelay * Math.pow(1.5, reconnectAttempts - 1);
+		// Said once per outage, not once per attempt
+		lost ??= notify({ type: 'warning', content: 'Connection lost. Reconnecting...', timeout: 0 });
 
-			if (typeof Notify !== 'undefined') {
-				new Notify({
-					type: 'warning',
-					content: `Connection lost. Reconnecting in ${Math.round(delay / 1000)}s... (${reconnectAttempts}/${maxReconnectAttempts})`,
-					timeout: delay - 500,
-					x: window.innerWidth / 2,
-					y: 100,
-				});
-			}
-
-			setTimeout(() => {
-				console.log(`Reconnect attempt ${reconnectAttempts}/${maxReconnectAttempts}`);
-				createSocket(wsUrl);
-			}, delay);
-		} else {
-			if (typeof Notify !== 'undefined') {
-				new Notify({
-					type: 'error',
-					content: 'Connection failed. Reloading in 5 seconds...',
-					timeout: 4500,
-					x: window.innerWidth / 2,
-					y: 100,
-				});
-			}
-
-			setTimeout(() => {
-				console.log('All reconnection attempts failed, reloading...');
-				window.location.reload();
-			}, 5000);
-		}
+		clearTimeout(retry);
+		retry = setTimeout(() => createSocket(wsUrl), delay);
+		delay = Math.min(delay * 2, MAX_DELAY);
 	});
 
 	return socket;
 };
+
+document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && reconnectNow());
+window.addEventListener('online', reconnectNow);
 
 // Initialize connection
 socket = createSocket();
@@ -160,8 +136,14 @@ export default {
 	get CLOSED() {
 		return WebSocket.CLOSED;
 	},
-	addEventListener: (...args) => socket.addEventListener(...args),
-	removeEventListener: (...args) => socket.removeEventListener(...args),
+	addEventListener: (type, listener, options) => {
+		socketListeners.add([type, listener, options]);
+		socket.addEventListener(type, listener, options);
+	},
+	removeEventListener: (type, listener, options) => {
+		for (const entry of socketListeners) if (entry[0] === type && entry[1] === listener) socketListeners.delete(entry);
+		socket.removeEventListener(type, listener, options);
+	},
 	send: (...args) => socket.send(...args),
 	close: (...args) => socket.close(...args),
 };
