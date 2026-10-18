@@ -14,10 +14,6 @@ module.exports = [
 	{
 		rules: {
 			...jsdocRequirements,
-			'no-unused-vars': [
-				'error',
-				{ varsIgnorePattern: '^_', argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
-			],
 		},
 	},
 	{
