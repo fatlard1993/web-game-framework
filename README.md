@@ -268,7 +268,6 @@ if (process.env.NODE_ENV === 'development') await hotReload.watch();
 - Optional database integration
 - Optional Game class integration
 
-
 ### Game
 
 Base class for game state management with player tracking and save/load.
@@ -326,7 +325,6 @@ class MyGame extends Game {
 - Auto-debounced save (5 second delay)
 - Extensible via lifecycle hooks
 
-
 ### Database
 
 JSON file-based persistence with collection CRUD operations.
@@ -352,7 +350,6 @@ db.collections.games.set({ id: 'abc', data: { id: 'abc', name: 'Replaced' } });
 // Read all records
 const allGames = db.collections.games.read();
 ```
-
 
 ### Client Modules
 
@@ -387,7 +384,6 @@ cleanup();
 - No page reload of its own: import `@vanilla-bean/components/app/reloadOnBuild` in the client for that
 - Listeners, from `onMessage` or `socket.addEventListener`, carry over to each new connection
 
-
 #### Game Context
 
 Reactive game state container for client-side state management.
@@ -409,7 +405,6 @@ gameContext.subscribe({
 	callback: players => console.log('Players updated:', players),
 });
 ```
-
 
 ### Utilities
 
@@ -477,7 +472,6 @@ if (validator(data)) {
 	// Process message
 }
 ```
-
 
 ## UI Components
 
@@ -618,9 +612,7 @@ bun --hot server.js   # Auto-restart on changes
 ├── examples/          # Example implementations
 │   └── minimal/       # Minimal server example
 └── docs/              # Documentation
-    ├── API.md         # Complete API reference
-    ├── GETTING_STARTED.md # Step-by-step tutorial
-    └── ARCHITECTURE.md # Design patterns
+    └── GETTING_STARTED.md # Step-by-step tutorial
 ```
 
 ### Running Tests
@@ -657,7 +649,6 @@ bun test:coverage
 
 3. Update Database imports if using persistence
 4. Copy UI components if needed (don't import directly)
-
 
 ## Roadmap
 
