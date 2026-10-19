@@ -268,7 +268,6 @@ if (process.env.NODE_ENV === 'development') await hotReload.watch();
 - Optional database integration
 - Optional Game class integration
 
-**[Full Server API Documentation →](./docs/API.md#server)**
 
 ### Game
 
@@ -327,7 +326,6 @@ class MyGame extends Game {
 - Auto-debounced save (5 second delay)
 - Extensible via lifecycle hooks
 
-**[Full Game API Documentation →](./docs/API.md#game)**
 
 ### Database
 
@@ -355,7 +353,6 @@ db.collections.games.set({ id: 'abc', data: { id: 'abc', name: 'Replaced' } });
 const allGames = db.collections.games.read();
 ```
 
-**[Full Database API Documentation →](./docs/API.md#database)**
 
 ### Client Modules
 
@@ -390,7 +387,6 @@ cleanup();
 - No page reload of its own: import `@vanilla-bean/components/app/reloadOnBuild` in the client for that
 - Listeners, from `onMessage` or `socket.addEventListener`, carry over to each new connection
 
-**[Full Socket API Documentation →](./docs/API.md#client-socket)**
 
 #### Game Context
 
@@ -414,7 +410,6 @@ gameContext.subscribe({
 });
 ```
 
-**[Full Game Context API Documentation →](./docs/API.md#game-context)**
 
 ### Utilities
 
@@ -483,7 +478,6 @@ if (validator(data)) {
 }
 ```
 
-**[Full Utils API Documentation →](./docs/API.md#utilities)**
 
 ## UI Components
 
@@ -664,7 +658,6 @@ bun test:coverage
 3. Update Database imports if using persistence
 4. Copy UI components if needed (don't import directly)
 
-**[Full migration guide →](./docs/MIGRATION.md)**
 
 ## Roadmap
 
@@ -729,4 +722,4 @@ MIT License - see [LICENSE](./LICENSE) file for details.
 
 ---
 
-**[Getting Started Guide](./docs/GETTING_STARTED.md)** • **[API Documentation](./docs/API.md)** • **[Architecture Guide](./docs/ARCHITECTURE.md)** • **[Examples](./examples/)**
+**[Getting Started Guide](./docs/GETTING_STARTED.md)** • **[Examples](./examples/)**
