@@ -1,5 +1,6 @@
 import { hotReload, sameOrigin } from '@vanilla-bean/components/app';
 
+import consoleLogger from './consoleLogger.js';
 import Database from './Database.js';
 
 /**
@@ -43,13 +44,7 @@ export default class Server {
 		this.Game = Game;
 		this.wsPath = wsPath;
 
-		// Simple logger fallback
-		this.logger = logger || {
-			info: (...args) => verbosity >= 1 && console.log('[INFO]', ...args),
-			warning: (...args) => verbosity >= 2 && console.warn('[WARN]', ...args),
-			error: (...args) => console.error('[ERROR]', ...args),
-			debug: (...args) => verbosity >= 3 && console.log('[DEBUG]', ...args),
-		};
+		this.logger = logger || consoleLogger({ verbosity });
 
 		if (typeof database === 'string') database = new Database({ filePath: database, logger: this.logger });
 		else if (database && !(database instanceof Database)) {

@@ -1,6 +1,8 @@
 import { Low } from 'lowdb';
 import { JSONFile } from 'lowdb/node';
 
+import consoleLogger from './consoleLogger.js';
+
 /**
  * Simple JSON file-based database with collections
  *
@@ -39,13 +41,7 @@ export default class Database extends Low {
 		this._onReady = onReady;
 		this._readyCallbacks = [];
 
-		// Simple logger fallback
-		this.logger = logger || {
-			info: (...args) => console.log('[DB-INFO]', ...args),
-			warning: (...args) => console.warn('[DB-WARN]', ...args),
-			error: (...args) => console.error('[DB-ERROR]', ...args),
-			debug: () => {}, // Suppress debug by default
-		};
+		this.logger = logger || consoleLogger({ prefix: 'DB-', verbosity: 2 });
 
 		this.logger.info(`Database connecting to ${filePath}`);
 

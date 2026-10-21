@@ -55,15 +55,13 @@ export default function basicGameRoutes(options = {}) {
 				const body = await request.json();
 				const game = server.createGame(body);
 
-				logger.info?.('Game created', { gameId: game.id, name: game.name }) ||
-					console.log('[info] Game created', { gameId: game.id, name: game.name });
+				logger.info('Game created', { gameId: game.id, name: game.name });
 
 				server.socketBroadcast({ update: 'newGame', game: game.toClient() });
 
 				return Response.json(game.toClient(), { status: 201 });
 			} catch (error) {
-				logger.error?.('Failed to create game', { error: error.message }) ||
-					console.error('[error] Failed to create game', error.message);
+				logger.error('Failed to create game', { error: error.message });
 				return Response.json({ message: 'Failed to create game', error: error.message }, { status: 500 });
 			}
 		}
@@ -86,13 +84,11 @@ export default function basicGameRoutes(options = {}) {
 				}
 
 				const newPlayer = game.addPlayer(name);
-				logger.info?.('Player joined', { gameId: game.id, playerId: newPlayer.id, name: newPlayer.name }) ||
-					console.log('[info] Player joined', { gameId: game.id, playerId: newPlayer.id, name: newPlayer.name });
+				logger.info('Player joined', { gameId: game.id, playerId: newPlayer.id, name: newPlayer.name });
 
 				return Response.json(newPlayer, { status: 201 });
 			} catch (error) {
-				logger.error?.('Failed to join game', { gameId: match.gameId, error: error.message }) ||
-					console.error('[error] Failed to join game', error.message);
+				logger.error('Failed to join game', { gameId: match.gameId, error: error.message });
 				return Response.json({ message: 'Failed to join game', error: error.message }, { status: 500 });
 			}
 		}
@@ -113,12 +109,10 @@ export default function basicGameRoutes(options = {}) {
 
 			try {
 				const removedPlayerId = game.removePlayer(playerId);
-				logger.info?.('Player exited game', { gameId, playerId: removedPlayerId }) ||
-					console.log('[info] Player exited game', { gameId, playerId: removedPlayerId });
+				logger.info('Player exited game', { gameId, playerId: removedPlayerId });
 				return Response.json({ id: removedPlayerId }, { status: 200 });
 			} catch (error) {
-				logger.error?.('Failed to exit game', { gameId, playerId, error: error.message }) ||
-					console.error('[error] Failed to exit game', error.message);
+				logger.error('Failed to exit game', { gameId, playerId, error: error.message });
 				return Response.json({ message: 'Failed to exit game', error: error.message }, { status: 500 });
 			}
 		}
@@ -138,8 +132,7 @@ export default function basicGameRoutes(options = {}) {
 			delete server.games[match.gameId];
 
 			server.socketBroadcast({ update: 'removedGame', gameId: match.gameId });
-			logger.info?.('Game deleted', { gameId: match.gameId }) ||
-				console.log('[info] Game deleted', { gameId: match.gameId });
+			logger.info('Game deleted', { gameId: match.gameId });
 
 			return new Response(null, { status: 204 });
 		}
