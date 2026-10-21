@@ -155,19 +155,21 @@ class GameCard extends Component {
 }
 
 class LobbyView extends Component {
-	constructor() {
-		super({
-			style: {
-				padding: '2rem',
-				maxWidth: '600px',
-				margin: '0 auto',
+	constructor(options, ...children) {
+		super(
+			{
+				...options,
+				style: {
+					padding: '2rem',
+					maxWidth: '600px',
+					margin: '0 auto',
+				},
 			},
-		});
+			...children,
+		);
 	}
 
-	render() {
-		this.empty();
-
+	build() {
 		new Component({ tag: 'h1', textContent: 'Clicker Game', style: { textAlign: 'center' }, appendTo: this });
 
 		new Component({
@@ -190,19 +192,22 @@ class LobbyView extends Component {
 }
 
 class GameView extends Component {
-	constructor() {
-		super({
-			style: {
-				padding: '2rem',
-				maxWidth: '600px',
-				margin: '0 auto',
-				textAlign: 'center',
+	constructor(options, ...children) {
+		super(
+			{
+				...options,
+				style: {
+					padding: '2rem',
+					maxWidth: '600px',
+					margin: '0 auto',
+					textAlign: 'center',
+				},
 			},
-		});
+			...children,
+		);
 	}
 
-	render() {
-		this.empty();
+	build() {
 		const game = state.game;
 		if (!game) return;
 
@@ -337,7 +342,7 @@ function showJoinDialog(gameId) {
 
 	let nameInput;
 	joinDialog = new Dialog({
-		title: 'Join Game',
+		header: 'Join Game',
 		append: [
 			(nameInput = new Input({
 				placeholder: 'Your name',
