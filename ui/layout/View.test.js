@@ -25,7 +25,7 @@ describe('View', () => {
 			toolbar: { heading: 'Mission Control', right: [new Component({ textContent: 'action' })] },
 		});
 
-		expect(container.querySelector('h1')).toHaveTextContent('Mission Control');
+		expect(container.querySelector('[role="heading"]')).toHaveTextContent('Mission Control');
 		expect(view._toolbar.elem).toHaveTextContent('action');
 	});
 

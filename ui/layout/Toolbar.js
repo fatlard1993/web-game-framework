@@ -1,72 +1,69 @@
-import { Component, styled } from '@vanilla-bean/components';
+import { Component, Toolbar as BaseToolbar, styled } from '@vanilla-bean/components';
 
-const Heading = styled(
+const Side = styled(
 	Component,
-	() => `
-		font-size: 1.5em;
-    margin: 0;
-		position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 40%;
-
-		/* Mobile responsive heading */
-		@media (max-width: 768px) {
-			font-size: 1.2em;
-			max-width: 100%;
-			position: relative;
-			left: auto;
-			transform: none;
-			text-align: center;
-			margin: 5px 0;
-		}
-
-		&:before {
-			content: "";
-		}
-	`,
-	{ tag: 'h1' },
-);
-
-const FlexContainer = styled(
-	Component,
-	() => `
+	({ space, media }) => `
 		display: flex;
-		flex-direction: row;
-		justify-content: space-between;
 		align-items: center;
+		gap: ${space.sm};
+		flex: 1 1 0;
+		min-width: max-content;
 
-		/* Mobile responsive layout */
-		@media (max-width: 768px) {
-			flex-wrap: wrap;
-			gap: 5px;
+		&.right {
+			justify-content: flex-end;
 		}
 
-		/* Make buttons smaller on mobile */
-		@media (max-width: 768px) {
-			& button {
-				font-size: 0.9em !important;
-				padding: 6px 10px !important;
-				min-height: 32px !important;
+		@media ${media.phone} {
+			&:empty {
+				display: none;
 			}
 		}
 	`,
 );
 
-export default class Toolbar extends Component {
+/**
+ * The library's page top bar with the game's heading centered between a left and a right group of controls. On a
+ * phone the heading takes its own row above them.
+ */
+export default class Toolbar extends styled(
+	BaseToolbar,
+	({ media }) => `
+		& > .heading {
+			flex: 0 1 auto;
+			text-align: center;
+		}
+
+		& > .left {
+			order: -1;
+		}
+
+		@media ${media.phone} {
+			& > .heading {
+				flex: 1 0 100%;
+				order: -2;
+			}
+		}
+	`,
+) {
 	static schema = {
+		variant: { default: 'bar' },
+		gap: { default: 8 },
 		heading: {
-			set(value) {
-				if (value?.elem) {
-					this._heading.elem.remove();
-					value.appendTo(this);
-					this._heading = value;
-				} else {
-					this._heading.elem.textContent = typeof value === 'string' ? value : (value?.textContent ?? '');
+			set(value, next) {
+				this._headingComponent?.elem.remove();
+				this._headingComponent = null;
+
+				if (!value?.elem) {
+					next((typeof value === 'object' ? value?.textContent : value) ?? null);
+
+					return;
 				}
+
+				next(null);
+
+				value.addClass('heading');
+				this.elem.prepend(value.elem);
+				this._headingComponent = value;
 			},
 		},
 		left: {
@@ -89,42 +86,8 @@ export default class Toolbar extends Component {
 		},
 	};
 
-	constructor(options = {}, ...children) {
-		super(
-			{
-				...options,
-				styles: (theme, Component) => `
-					padding: 15px 15px 0 15px;
-					height: 57px;
-					background-color: ${theme.colors.darkest(theme.colors.gray)};
-
-					/* Mobile responsive improvements */
-					@media (max-width: 768px) {
-						padding: 10px 8px 0 8px;
-						height: auto;
-						min-height: 50px;
-					}
-
-					${options.styles?.(theme, Component) || ''}
-				`,
-			},
-			...children,
-		);
-	}
-
 	build() {
-		if (this.options.heading?.elem) {
-			this.options.heading.appendTo(this);
-			this._heading = this.options.heading;
-		} else {
-			this._heading = new Heading({
-				appendTo: this,
-				...(typeof this.options.heading === 'string' ? { textContent: this.options.heading } : this.options.heading),
-			});
-		}
-		this._left = new Component({}, ...this.options.left);
-		this._right = new Component({}, ...this.options.right);
-
-		new FlexContainer({ appendTo: this }, this._left, this._right);
+		this._left = new Side({ addClass: 'left', appendTo: this });
+		this._right = new Side({ addClass: 'right', appendTo: this });
 	}
 }

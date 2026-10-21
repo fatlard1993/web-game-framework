@@ -1,4 +1,4 @@
-import { Link, Button, Notify, copyToClipboard } from '@vanilla-bean/components';
+import { Link, Button, Notify, EmptyState, copyToClipboard } from '@vanilla-bean/components';
 
 import { View } from '../layout/index.js';
 import { getGames, onMessage } from '../../client/index.js';
@@ -84,11 +84,10 @@ export default class Hub extends View {
 					textContent: this.options.noGamesText,
 				});
 			} else {
-				const noGamesMessage = this.options.noGamesMessage || 'No games found. Create one to get started!';
-				const messageElement = document.createElement('div');
-				messageElement.style.cssText = 'margin: 24px; padding: 16px; text-align: center; color: #666;';
-				messageElement.textContent = noGamesMessage;
-				this._body.append(messageElement);
+				new EmptyState({
+					message: this.options.noGamesMessage || 'No games found. Create one to get started!',
+					appendTo: this._body,
+				});
 			}
 			return;
 		}

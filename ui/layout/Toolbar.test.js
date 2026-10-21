@@ -11,26 +11,26 @@ describe('Toolbar', () => {
 	});
 
 	describe('initial render', () => {
-		test('renders an empty heading and layout container by default', () => {
+		test('renders a page top bar without a heading by default', () => {
 			toolbar = new Toolbar({ appendTo: container });
 
-			const heading = container.querySelector('h1');
-			expect(heading).not.toBeNull();
-			expect(heading).toHaveTextContent('');
+			expect(toolbar.elem).toHaveClass('variant-bar');
+			expect(container.querySelector('[role="heading"]')).toBeNull();
 		});
 
-		test('renders a string heading as h1 text', () => {
+		test('renders a string heading as the bar title', () => {
 			toolbar = new Toolbar({ appendTo: container, heading: 'Game Hub' });
 
-			expect(container.querySelector('h1')).toHaveTextContent('Game Hub');
+			expect(container.querySelector('.heading[aria-level="1"]')).toHaveTextContent('Game Hub');
 		});
 
-		test('renders a component heading in place of the default h1', () => {
+		test('renders a component heading in place of the default title', () => {
 			const heading = new Component({ tag: 'h2', textContent: 'Custom Heading' });
 			toolbar = new Toolbar({ appendTo: container, heading });
 
-			expect(container.querySelector('h1')).toBeNull();
+			expect(container.querySelector('.heading[aria-level="1"]')).toBeNull();
 			expect(container.querySelector('h2')).toHaveTextContent('Custom Heading');
+			expect(heading.elem).toHaveClass('heading');
 			expect(toolbar.elem.contains(heading.elem)).toBe(true);
 		});
 
@@ -53,8 +53,8 @@ describe('Toolbar', () => {
 
 			toolbar.options.heading = 'After';
 
-			const headings = container.querySelectorAll('h1');
-			expect(headings.length).toBe(1);
+			const headings = container.querySelectorAll('[role="heading"]');
+			expect(headings).toHaveLength(1);
 			expect(headings[0]).toHaveTextContent('After');
 		});
 
@@ -64,8 +64,17 @@ describe('Toolbar', () => {
 
 			toolbar.options.heading = replacement;
 
-			expect(container.querySelector('h1')).toBeNull();
+			expect(container.querySelector('.heading[aria-level="1"]')).toBeNull();
 			expect(container.querySelector('h2')).toHaveTextContent('Replacement');
+		});
+
+		test('setting a string heading after a component heading puts a title back', () => {
+			toolbar = new Toolbar({ appendTo: container, heading: new Component({ tag: 'h2', textContent: 'Custom' }) });
+
+			toolbar.options.heading = 'Plain';
+
+			expect(container.querySelector('h2')).toBeNull();
+			expect(container.querySelector('.heading[aria-level="1"]')).toHaveTextContent('Plain');
 		});
 
 		test('setting left replaces its children', () => {
