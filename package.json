@@ -65,7 +65,7 @@
 		"nanoid": "^6.0.0",
 		"qrcode": "^1.5.4",
 		"@vanilla-bean/components": "^5.0.0",
-		"@vanilla-bean/hypertether": "^1.1.0"
+		"@vanilla-bean/hypertether": "^1.1.1"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^2.1.0",
