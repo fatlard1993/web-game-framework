@@ -40,7 +40,7 @@ import { Server, Game, Database, EventRouter } from '@fatlard1993/web-game-frame
 
 // Client modules
 import socket, { onMessage } from '@fatlard1993/web-game-framework/client/socket';
-import { gameContext } from '@fatlard1993/web-game-framework/client/gameContext';
+import gameContext from '@fatlard1993/web-game-framework/client/gameContext';
 import { createClientEventRouter } from '@fatlard1993/web-game-framework/client';
 
 // Utilities
@@ -386,23 +386,21 @@ cleanup();
 
 #### Game Context
 
-Reactive game state container for client-side state management.
+An `Oxject` from `@vanilla-bean/components` (imported in `client/gameContext.js` as `Context`) holding `gameId` and `playerId`, with `players` as a `Players` map that knows the current player.
 
 ```js
-import { gameContext } from '@fatlard1993/web-game-framework/client/gameContext';
+import gameContext from '@fatlard1993/web-game-framework/client/gameContext';
 
-// Access game state
-console.log(gameContext.id);
-console.log(gameContext.name);
-console.log(gameContext.players);
+gameContext.gameId = 'abc123';
+gameContext.playerId = 'player1';
 
-// Access current player
-console.log(gameContext.currentPlayer);
+// Access the current player
+console.log(gameContext.players.currentPlayer);
 
-// Subscribe to changes (requires @vanilla-bean/components Context)
+// Subscribe to changes
 gameContext.subscribe({
-	key: 'players',
-	callback: players => console.log('Players updated:', players),
+	key: 'playerId',
+	callback: playerId => console.log('Player changed:', playerId),
 });
 ```
 
@@ -438,38 +436,6 @@ const item = weightedChance({
 // Percentage chance test
 if (chance(25)) {
 	console.log('25% chance triggered!');
-}
-```
-
-#### Socket Validation
-
-```js
-import {
-	validateMessage,
-	validatePlayerMessage,
-	validatePositionMessage,
-	createMessageValidator,
-} from '@fatlard1993/web-game-framework/utils';
-
-// Basic message validation
-if (validateMessage(data, gameId)) {
-	// Process message
-}
-
-// Player-specific validation
-if (validatePlayerMessage(data)) {
-	// Update player
-}
-
-// Position data validation
-if (validatePositionMessage(data)) {
-	// Move entity
-}
-
-// Create bound validator
-const validator = createMessageValidator('game123');
-if (validator(data)) {
-	// Process message
 }
 ```
 
