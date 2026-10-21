@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 import { Notify } from '@vanilla-bean/components';
+import { connectSocket } from '@vanilla-bean/components/utils';
 
 /**
  * WebSocket wrapper with automatic reconnection and listener management
@@ -20,15 +21,7 @@ import { Notify } from '@vanilla-bean/components';
  * ```
  */
 
-let socket;
-let wsUrl;
-let retry;
-let delay = 1000;
 let lost = null;
-const MAX_DELAY = 10_000;
-const messageListeners = new Set();
-// Listeners added through the wrapper, carried onto each new socket like the message listeners
-const socketListeners = new Set();
 
 const notify = options => {
 	if (typeof Notify === 'undefined') return;
@@ -36,60 +29,20 @@ const notify = options => {
 	return new Notify({ x: window.innerWidth / 2, y: 100, ...options });
 };
 
-// Now, rather than after the backoff: a page back in view, or a network back up, shouldn't wait out a timer
-const reconnectNow = () => {
-	if (socket?.readyState === WebSocket.OPEN || socket?.readyState === WebSocket.CONNECTING) return;
+const socket = connectSocket('/ws', {
+	onLost: () => {
+		lost = notify({ type: 'warning', content: 'Connection lost. Reconnecting...', timeout: 0 });
+	},
+	onRestored: () => {
+		if (lost?.elem?.isConnected) lost.destroy();
+		lost = null;
+		notify({ type: 'success', content: 'Connection restored.', timeout: 2000 });
+	},
+});
 
-	clearTimeout(retry);
-	delay = 1000;
-	createSocket(wsUrl);
-};
-
-/**
- * Create WebSocket connection. A lost connection is retried for as long as the page is open, backing off to every 10
- * seconds, and at once when the page comes back into view or the network comes back.
- * @param {string} [url] - Optional WebSocket URL (default: the current host's /ws, over wss on https pages)
- * @returns {WebSocket} The newly created socket
- */
-const createSocket = url => {
-	wsUrl = url || `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`;
-	socket = new WebSocket(wsUrl);
-
-	messageListeners.forEach(listener => socket.addEventListener('message', listener));
-	socketListeners.forEach(([type, listener, options]) => socket.addEventListener(type, listener, options));
-
-	socket.addEventListener('open', () => {
-		console.log('WebSocket connected');
-		delay = 1000;
-
-		if (lost) {
-			if (lost.elem?.isConnected) lost.destroy();
-			lost = null;
-			notify({ type: 'success', content: 'Connection restored.', timeout: 2000 });
-		}
-	});
-
-	socket.addEventListener('error', error => console.error('WebSocket error:', error));
-
-	socket.addEventListener('close', event => {
-		console.error('WebSocket closed:', event);
-
-		// Said once per outage, not once per attempt
-		lost ??= notify({ type: 'warning', content: 'Connection lost. Reconnecting...', timeout: 0 });
-
-		clearTimeout(retry);
-		retry = setTimeout(() => createSocket(wsUrl), delay);
-		delay = Math.min(delay * 2, MAX_DELAY);
-	});
-
-	return socket;
-};
-
-document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && reconnectNow());
-window.addEventListener('online', reconnectNow);
-
-// Initialize connection
-socket = createSocket();
+socket.addEventListener('open', () => console.log('WebSocket connected'));
+socket.addEventListener('error', error => console.error('WebSocket error:', error));
+socket.addEventListener('close', event => console.error('WebSocket closed:', event));
 
 /**
  * Register a message listener
@@ -107,13 +60,9 @@ export const onMessage = callback => {
 		}
 	};
 
-	messageListeners.add(listener);
 	socket.addEventListener('message', listener);
 
-	return () => {
-		messageListeners.delete(listener);
-		socket.removeEventListener('message', listener);
-	};
+	return () => socket.removeEventListener('message', listener);
 };
 
 /**
@@ -136,14 +85,8 @@ export default {
 	get CLOSED() {
 		return WebSocket.CLOSED;
 	},
-	addEventListener: (type, listener, options) => {
-		socketListeners.add([type, listener, options]);
-		socket.addEventListener(type, listener, options);
-	},
-	removeEventListener: (type, listener, options) => {
-		for (const entry of socketListeners) if (entry[0] === type && entry[1] === listener) socketListeners.delete(entry);
-		socket.removeEventListener(type, listener, options);
-	},
-	send: (...args) => socket.send(...args),
-	close: (...args) => socket.close(...args),
+	addEventListener: socket.addEventListener,
+	removeEventListener: socket.removeEventListener,
+	send: socket.send,
+	close: socket.close,
 };
