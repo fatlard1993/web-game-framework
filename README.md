@@ -461,6 +461,7 @@ Rather than being a universal UI kit, these components serve as **templates** yo
 - [Hub.js](./ui/GameRoom/Hub.js) - Game list/lobby: the library's `Toolbar` bar, a `Card` row per game, and an `EmptyState` when there are none
 - [Join.js](./ui/GameRoom/Join.js) - Join existing game
 - [Create.js](./ui/GameRoom/Create.js) - Create new game
+- [ExitDialog.js](./ui/GameRoom/ExitDialog.js) - Leaving a game: a "remove me" checkbox, ticked, then the hub; see [ui/README.md](./ui/README.md#customization-points)
 - [GameList.js](./ui/GameRoom/GameList.js), [GameInfoPopover.js](./ui/GameRoom/GameInfoPopover.js), [GameInfoDialog.js](./ui/GameRoom/GameInfoDialog.js) - The Hub's list and its game info
 
 **Other:**
@@ -570,7 +571,7 @@ bun --hot server.js   # Auto-restart on changes
 │   └── index.js         # Client exports
 ├── ui/                  # Reference UI components
 │   ├── layout/          # View, Toolbar, Body
-│   ├── GameRoom/        # Hub, Join, Create, GameList, game info
+│   ├── GameRoom/        # Hub, Join, Create, GameList, game info, ExitDialog
 │   └── QRCode.js        # Join link QR code
 ├── utils/               # Helper utilities
 │   ├── identifiers.js   # ID generation

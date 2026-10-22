@@ -29,6 +29,7 @@ Rather than trying to be a universal UI kit, these components serve as **templat
 - [Hub.js](GameRoom/Hub.js) - Game list/lobby
 - [Join.js](GameRoom/Join.js) - Join existing game
 - [Create.js](GameRoom/Create.js) - Create new game
+- [ExitDialog.js](GameRoom/ExitDialog.js) - Leaving a game, for a play view's toolbar
 
 ## Usage Patterns
 
@@ -61,6 +62,7 @@ GET  /games           # List all games
 GET  /games/:id       # Get game details
 POST /games           # Create new game
 POST /games/:id/join  # Join game
+POST /games/:gameId/:playerId/exit  # Exit game (ExitDialog)
 ```
 
 ## Customization Points
@@ -84,9 +86,22 @@ Each component accepts options for customization:
 - `formInputs` - Form field configuration
 - `containerComponent` - Custom wrapper
 
-## Examples
+**ExitDialog.js** (a `Dialog`; `header` defaults to "Exiting"):
 
-See [examples/with-ui/](../examples/with-ui/) for a complete working example.
+- `gameId`, `playerId` - Whose exit to send (`POST /games/:gameId/:playerId/exit`); without both, read from `gameContext`
+- `label` - The "Remove me from the game" checkbox, ticked to start
+- `confirmLabel` - The confirming button, after Cancel; defaults to "Exit"
+- `onExit` - Called after the removal and before leaving, maybe async (stop the music)
+- `hubUrl` - Where the player goes; defaults to `#/hub`
+
+A removal that fails shows the server's reason in a Notify, and the player still leaves.
+
+```js
+new Button({
+	content: 'Exit',
+	onPointerPress: () => new ExitDialog({ gameId, playerId }),
+});
+```
 
 ## When NOT to Use These
 
