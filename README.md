@@ -49,7 +49,7 @@ import gameContext from '@fatlard1993/web-game-framework/client/gameContext';
 import { createClientEventRouter } from '@fatlard1993/web-game-framework/client';
 
 // Utilities
-import { simpleId, shuffleArray, weightedChance, chance } from '@fatlard1993/web-game-framework/utils';
+import { simpleId } from '@fatlard1993/web-game-framework/utils';
 import '@fatlard1993/web-game-framework/utils/exit'; // exit handling for the server process
 ```
 
@@ -229,7 +229,7 @@ See [EventRouter.js](./core/EventRouter.js) source for full API.
 | **[Players](./core/Players.js)** | Extended Map for player data | Convenience `update()` method |
 | **[socket](./client/socket.js)** | Client WebSocket wrapper | Auto-reconnection, listener tracking |
 | **[gameContext](./client/gameContext.js)** | Reactive game state container | Player management, `currentPlayer` access |
-| **[utils](./utils/)** | Helper functions | ID generation, random helpers, exit handling |
+| **[utils](./utils/)** | Helper functions | ID generation, exit handling |
 | **[UI components](./ui/README.md)** | Optional lobby UI (copy & customize) | Layout, GameRoom views (Hub, Join, Create) |
 
 All modules work independently. Use `Server` alone for raw WebSocket handling, or combine for complete game framework.
@@ -431,30 +431,6 @@ import { simpleId } from '@fatlard1993/web-game-framework/utils';
 const id = simpleId(); // "aB3xY" (5-char alphanumeric)
 ```
 
-#### Random Utilities
-
-`shuffleArray`, `weightedChance` and `chance` are re-exported from `@vanilla-bean/components/utils`, which also has `randInt` (min and max inclusive), `rand` and `randFromArray`.
-
-```js
-import { shuffleArray, weightedChance, chance } from '@fatlard1993/web-game-framework/utils';
-
-// Shuffle array in-place (Fisher-Yates)
-const deck = [1, 2, 3, 4, 5];
-shuffleArray(deck); // [3, 1, 5, 2, 4]
-
-// Weighted random selection (must sum to 100, or it throws)
-const item = weightedChance({
-	common: 70,
-	rare: 25,
-	legendary: 5,
-}); // "common" (70% chance)
-
-// Percentage chance test
-if (chance(25)) {
-	console.log('25% chance triggered!');
-}
-```
-
 #### Exit Handling
 
 Importing `utils/exit` runs `handleExit()` from `@vanilla-bean/components/app`: Ctrl+C exits 130, SIGTERM exits 0, an uncaught exception exits 99 and an unhandled rejection exits 1.
@@ -598,7 +574,6 @@ bun --hot server.js   # Auto-restart on changes
 │   └── QRCode.js        # Join link QR code
 ├── utils/               # Helper utilities
 │   ├── identifiers.js   # ID generation
-│   ├── random.js        # Random helpers (from the library)
 │   ├── exit.js          # Exit handling (from the library)
 │   └── index.js         # Utils exports
 ├── examples/            # Example implementations
@@ -646,7 +621,7 @@ bun run test:watch
 
 - Core Server, Game, Database
 - Client socket with reconnection
-- Utils (ID, random, validation)
+- Utils (ID, validation)
 - UI reference components
 - Documentation
 
