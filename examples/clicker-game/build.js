@@ -4,7 +4,7 @@
  */
 import { buildClient } from '@vanilla-bean/components/app';
 
-const result = await buildClient({ entrypoints: ['./client/indexWithVBC.html'], outdir: './client/dist' });
+const result = await buildClient({ entrypoints: ['./client/index.html'], outdir: './client/dist' });
 
 if (!result.success) process.exit(1);
 

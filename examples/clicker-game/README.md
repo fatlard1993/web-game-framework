@@ -6,10 +6,10 @@ A multiplayer clicking competition demonstrating web-game-framework basics.
 
 ```bash
 cd examples/clicker-game
-bun server.js
+NODE_ENV=development bun --hot server.js
 ```
 
-Open http://localhost:3000 and click away.
+Open http://localhost:3000 and click away. In development the Server builds the client and rebuilds it on a change, reloading the page; type `b` to rebuild or `stop` to quit. For production, `bun build.js` once, then `bun server.js`. `PORT` picks another port.
 
 ## Project Structure
 
@@ -17,11 +17,11 @@ Open http://localhost:3000 and click away.
 clicker-game/
 ├── ClickerGame.js     # Game class with click logic
 ├── server.js          # Server setup with routes and websocket
+├── build.js           # Production client build
 ├── client/
 │   ├── index.html
-│   ├── client.js
-│   └── styles.css
-└── data/              # Auto-created for persistence
+│   └── client.js      # The lobby and game, in @vanilla-bean/components
+└── data/              # Created on start, for persistence (not committed)
 ```
 
 ## How It Works

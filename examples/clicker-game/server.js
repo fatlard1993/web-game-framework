@@ -8,11 +8,17 @@
  * - REST API routes
  * - Message handling
  */
+import { mkdirSync } from 'fs';
+
+import { serveStatic } from '@vanilla-bean/components/app';
+
 import Server from '../../core/Server.js';
 import Database from '../../core/Database.js';
 import ClickerGame from './ClickerGame.js';
 
 // Initialize database
+mkdirSync('./data', { recursive: true });
+
 const database = new Database({
 	filePath: './data/clicker-games.json',
 	onReady: db => {
@@ -25,72 +31,6 @@ const database = new Database({
 // Router for HTTP requests (WebSocket handled automatically)
 const router = server => async request => {
 	const url = new URL(request.url);
-
-	// Serve static files in development
-	if (url.pathname === '/' || url.pathname === '/index.html') {
-		return new Response(Bun.file('./client/dist/indexWithVBC.html'));
-	}
-
-	// Legacy version
-	if (url.pathname === '/legacy') {
-		return new Response(Bun.file('./client/index.html'));
-	}
-
-	// Serve bundled client chunks
-	if (url.pathname.startsWith('/chunk-')) {
-		const ext = url.pathname.endsWith('.js.map') ? '.js.map' : '.js';
-		const contentType = ext === '.js' ? 'application/javascript' : 'application/json';
-		return new Response(Bun.file(`./client/dist${url.pathname}`), {
-			headers: { 'Content-Type': contentType },
-		});
-	}
-
-	// Serve CSS dependencies from node_modules
-	if (url.pathname.startsWith('/@fortawesome/')) {
-		const filePath = url.pathname.replace(/^\/@fortawesome\//, '../../node_modules/@fortawesome/');
-		return new Response(Bun.file(filePath), {
-			headers: { 'Content-Type': 'text/css' },
-		});
-	}
-
-	if (url.pathname.startsWith('/@fontsource-variable/')) {
-		const filePath = url.pathname.replace(/^\/@fontsource-variable\//, '../../node_modules/@fontsource-variable/');
-		return new Response(Bun.file(filePath), {
-			headers: { 'Content-Type': 'text/css' },
-		});
-	}
-
-	if (url.pathname.startsWith('/augmented-ui/')) {
-		const filePath = url.pathname.replace(/^\/augmented-ui\//, '../../node_modules/augmented-ui/');
-		return new Response(Bun.file(filePath), {
-			headers: { 'Content-Type': 'text/css' },
-		});
-	}
-
-	if (url.pathname === '/client.js') {
-		return new Response(Bun.file('./client/client.js'), {
-			headers: { 'Content-Type': 'application/javascript' },
-		});
-	}
-
-	// Serve VBC client bundle
-	if (url.pathname === '/clientVBC.js') {
-		return new Response(Bun.file('./client/dist/clientVBC.js'), {
-			headers: { 'Content-Type': 'application/javascript' },
-		});
-	}
-
-	if (url.pathname === '/clientVBC.js.map') {
-		return new Response(Bun.file('./client/dist/clientVBC.js.map'), {
-			headers: { 'Content-Type': 'application/json' },
-		});
-	}
-
-	if (url.pathname === '/styles.css') {
-		return new Response(Bun.file('./client/styles.css'), {
-			headers: { 'Content-Type': 'text/css' },
-		});
-	}
 
 	// API Routes
 
@@ -216,13 +156,15 @@ const router = server => async request => {
 		});
 	}
 
-	return new Response('Not Found', { status: 404 });
+	// The built client, and the icon and font stylesheets its Page loads
+	return serveStatic(request, { root: './client/dist' });
 };
 
 // Create server with custom WebSocket message handler
 const server = new Server({
-	port: 3000,
+	port: Number(process.env.PORT) || 3000,
 	Game: ClickerGame,
+	build: { entrypoints: ['./client/index.html'], outdir: './client/dist' },
 	database,
 	router,
 	verbosity: 3,
@@ -307,4 +249,4 @@ console.log('  POST   /api/games/:id/join - Join a game');
 console.log('  DELETE /api/games/:id    - Delete a game');
 console.log('  GET    /health           - Health check');
 console.log('');
-console.log('🎯 Open http://localhost:3000 in your browser to play!');
+console.log(`🎯 Open ${server.url} in your browser to play!`);

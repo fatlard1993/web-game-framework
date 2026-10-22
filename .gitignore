@@ -24,3 +24,6 @@ coverage
 # IDE
 .vscode
 .idea
+
+# example runtime data
+examples/clicker-game/data
