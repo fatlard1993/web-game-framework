@@ -1,4 +1,7 @@
 import { debounce } from '@vanilla-bean/components/utils';
+
+import { simpleId } from '../utils/identifiers.js';
+
 import Players from './Players.js';
 import EventRouter from './EventRouter.js';
 import consoleLogger from './consoleLogger.js';
@@ -101,8 +104,7 @@ export default class Game {
 	 * @returns {string} Unique game ID
 	 */
 	_generateId() {
-		// Simple fallback ID generator
-		return Math.random().toString(36).substring(2, 7);
+		return simpleId();
 	}
 
 	/**

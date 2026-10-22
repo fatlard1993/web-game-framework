@@ -43,6 +43,12 @@ describe('Game', () => {
 		expect(server.games['custom-id']).toBe(game);
 	});
 
+	test('a new game gets a short alphanumeric id', () => {
+		const game = new Game({ server: mockServer(), logger: quietLogger });
+
+		expect(game.id).toMatch(/^[A-Za-z0-9]{5}$/);
+	});
+
 	test('keeps the saveState id when restoring', () => {
 		const server = mockServer();
 		const game = new CustomGame({ server, logger: quietLogger, saveState: { id: 'saved-id' } });
