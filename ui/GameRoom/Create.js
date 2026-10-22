@@ -2,7 +2,6 @@ import { Link, Button, Form } from '@vanilla-bean/components';
 
 import { View } from '../layout/index.js';
 import { createGame } from '../../client/index.js';
-// Note: ConsoleContainer import removed - game implementation provides this
 
 export default class Create extends View {
 	static schema = {
