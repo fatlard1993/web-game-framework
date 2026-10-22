@@ -12,7 +12,6 @@ import consoleLogger from './consoleLogger.js';
  * ```js
  * const db = new Database({
  *   filePath: './data/games.json',
- *   logger: console,
  *   onReady: (db) => {
  *     console.log('Database loaded!');
  *   }

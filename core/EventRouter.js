@@ -1,3 +1,5 @@
+import consoleLogger from './consoleLogger.js';
+
 /**
  * Event-based message routing system with validation and middleware support
  *
@@ -38,7 +40,7 @@ export default class EventRouter {
 	 */
 	constructor({ context, logger, emitFn } = {}) {
 		this.context = context;
-		this.logger = logger || console;
+		this.logger = logger || consoleLogger();
 		this.emitFn = emitFn;
 
 		// Event handlers: Map<eventName, Set<handler>>
@@ -159,7 +161,7 @@ export default class EventRouter {
 			try {
 				const isValid = await eventDefinition.validate(data);
 				if (!isValid) {
-					this.logger.warn?.(`[EventRouter] Validation failed for event: ${eventName}`, data);
+					this.logger.warning?.(`[EventRouter] Validation failed for event: ${eventName}`, data);
 					return false;
 				}
 			} catch (error) {

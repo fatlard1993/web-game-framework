@@ -31,7 +31,7 @@ export default class Server {
 	 * @param {string} [options.wsPath] - WebSocket upgrade path
 	 * @param {Function} [options.Game] - Game class to instantiate
 	 * @param {object|string} [options.database] - Database instance, or a file path to create one from
-	 * @param {object} [options.logger] - Optional logger (console-compatible)
+	 * @param {object} [options.logger] - Optional logger with info, warning, error and debug
 	 * @param {number} [options.verbosity] - Log verbosity level (0-3)
 	 * @param {object} [options.websocket] - Optional websocket handlers
 	 * @param {Function} [options.websocket.message] - Custom message handler (socket, message)

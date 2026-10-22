@@ -15,7 +15,6 @@ import ClickerGame from './ClickerGame.js';
 // Initialize database
 const database = new Database({
 	filePath: './data/clicker-games.json',
-	logger: console,
 	onReady: db => {
 		console.log('✅ Database ready!');
 		const gameCount = Object.keys(db.data.games || {}).length;

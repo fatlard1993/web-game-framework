@@ -1,6 +1,7 @@
 import { debounce } from '@vanilla-bean/components/utils';
 import Players from './Players.js';
 import EventRouter from './EventRouter.js';
+import consoleLogger from './consoleLogger.js';
 
 /**
  * Base Game class with player management, broadcasting, and save/load
@@ -48,8 +49,7 @@ export default class Game {
 
 		this.server = server;
 
-		// Simple logger fallback
-		this.logger = logger || server?.logger || console;
+		this.logger = logger || server?.logger || consoleLogger();
 
 		// Player management
 		this.players = new Players();

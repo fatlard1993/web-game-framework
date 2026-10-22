@@ -305,7 +305,6 @@ import MyGame from './MyGame.js';
 // Initialize database
 const database = new Database({
 	filePath: './data/games.json',
-	logger: console,
 	onReady: db => {
 		console.log('Database ready!');
 		console.log('Loaded games:', Object.keys(db.data.games || {}).length);

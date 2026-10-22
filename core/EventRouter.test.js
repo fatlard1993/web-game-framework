@@ -83,6 +83,17 @@ describe('EventRouter', () => {
 			expect(received).toBe(null);
 		});
 
+		test('reports a failed validation through the logger warning', async () => {
+			const warnings = [];
+			const logger = { info: () => {}, warning: message => warnings.push(message), error: () => {}, debug: () => {} };
+			const loggedRouter = new EventRouter({ logger });
+
+			loggedRouter.defineEvent('validated', { validate: () => false });
+			await loggedRouter.emit('validated', {});
+
+			expect(warnings).toEqual(['[EventRouter] Validation failed for event: validated']);
+		});
+
 		test('should transform data before handlers', async () => {
 			router.defineEvent('transform', {
 				transform: data => ({ ...data, transformed: true }),

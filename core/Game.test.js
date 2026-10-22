@@ -70,4 +70,15 @@ describe('Game', () => {
 
 		expect(server.created.length).toBe(0);
 	});
+
+	test('a server without a logger gets one with warning, for cyclic broadcasts', () => {
+		const sent = [];
+		const server = { ...mockServer(), socketBroadcast: data => sent.push(data) };
+		const game = new CustomGame({ server });
+		const cyclic = { toClient: () => ({ flat: true }) };
+		cyclic.self = cyclic;
+
+		expect(() => game.broadcast('state', { cyclic })).not.toThrow();
+		expect(sent[0].cyclic).toEqual({ flat: true });
+	});
 });
