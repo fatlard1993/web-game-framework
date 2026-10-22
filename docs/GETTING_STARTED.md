@@ -30,7 +30,7 @@ Create a minimal multiplayer server (`server.js`):
 ```js
 import { Server } from '@fatlard1993/web-game-framework';
 
-const server = new Server({ port: 3000 });
+const server = await new Server({ port: 3000 }).ready;
 
 console.log(`Server running at ${server.url}`);
 console.log(`WebSocket available at ws://localhost:3000/ws`);
@@ -299,7 +299,7 @@ export default class MyGame extends Game {
 Update `server.js` to add database:
 
 ```js
-import { Server, Game, Database, simpleId } from '@fatlard1993/web-game-framework';
+import { Server, Game, Database } from '@fatlard1993/web-game-framework';
 import MyGame from './MyGame.js';
 
 // Initialize database
@@ -313,13 +313,6 @@ const database = new Database({
 
 const router = server => request => {
 	const url = new URL(request.url);
-
-	if (url.pathname === '/ws') {
-		const upgraded = server.httpServer.upgrade(request, {
-			data: { clientId: simpleId() },
-		});
-		if (upgraded) return;
-	}
 
 	if (url.pathname === '/health') {
 		return new Response('OK', {
@@ -350,7 +343,9 @@ const server = new Server({
 	verbosity: 3,
 });
 
-// Games are automatically loaded from database on startup
+// Games are automatically loaded from database once listening
+await server.ready;
+
 console.log(`Server running at ${server.url}`);
 ```
 

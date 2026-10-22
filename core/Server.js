@@ -1,16 +1,20 @@
-import { hotReload, sameOrigin } from '@vanilla-bean/components/app';
+import { devConsole, serve } from '@vanilla-bean/components/app';
+
+import { simpleId } from '../utils/identifiers.js';
 
 import consoleLogger from './consoleLogger.js';
 import Database from './Database.js';
 
 /**
- * Minimal WebSocket server for multiplayer games
+ * Minimal WebSocket server for multiplayer games, on the server kit's `serve` (from `@vanilla-bean/components/app`)
  *
  * Features:
  * - Automatic WebSocket upgrade (at /ws by default)
  * - WebSocket client tracking
  * - Broadcasting to all clients
- * - Takes the page reload sockets of `hotReload` (from `@vanilla-bean/components/app`)
+ * - From `serve`: cross-origin refusal, a thrown error answered (withErrors), 404 for what the router leaves, and in
+ *   development the client watched and rebuilt, with its pages reloaded
+ * - In development, the terminal's `b` (build) and `stop`, plus the game's own commands
  * - Optional health monitoring
  * - Optional database integration
  * @example
@@ -19,6 +23,7 @@ import Database from './Database.js';
  *   port: 3000,
  *   Game: MyGameClass,
  *   router: (server) => (request) => { ... }, // optional
+ *   devConsole: (command, server) => { ... }, // optional
  * });
  * ```
  */
@@ -27,22 +32,39 @@ export default class Server {
 	 * @param {object} options - Server configuration
 	 * @param {number} options.port - Port to listen on
 	 * @param {string} [options.hostname] - Hostname to bind to
-	 * @param {Function} [options.router] - Optional HTTP request router function
+	 * @param {Function} [options.router] - Optional HTTP request router: (server) => (request, bunServer) => Response
 	 * @param {string} [options.wsPath] - WebSocket upgrade path
 	 * @param {Function} [options.Game] - Game class to instantiate
 	 * @param {object|string} [options.database] - Database instance, or a file path to create one from
 	 * @param {object} [options.logger] - Optional logger with info, warning, error and debug
 	 * @param {number} [options.verbosity] - Log verbosity level (0-3)
+	 * @param {object} [options.build] - Client build options for development's watch (buildClient's; its defaults if
+	 *   omitted)
+	 * @param {Function} [options.devConsole] - (command, server) => anything, for a line typed into the dev server's
+	 *   terminal that isn't `b` or `stop`
 	 * @param {object} [options.websocket] - Optional websocket handlers
 	 * @param {Function} [options.websocket.message] - Custom message handler (socket, message)
 	 * @param {Function} [options.websocket.open] - Custom open handler (socket)
 	 * @param {Function} [options.websocket.close] - Custom close handler (socket, code, reason)
 	 */
-	constructor({ port, hostname = '0.0.0.0', router, wsPath = '/ws', Game, database, logger, verbosity, websocket }) {
+	constructor({
+		port,
+		hostname = '0.0.0.0',
+		router,
+		wsPath = '/ws',
+		Game,
+		database,
+		logger,
+		verbosity,
+		build,
+		devConsole: commands,
+		websocket,
+	}) {
 		this.clients = {};
 		this.games = {};
 		this.Game = Game;
 		this.wsPath = wsPath;
+		this.requestedPort = port;
 
 		this.logger = logger || consoleLogger({ verbosity });
 
@@ -60,18 +82,18 @@ export default class Server {
 			this.verbosity = verbosity;
 		}
 
-		// Create default router that handles WebSocket upgrade
-		const defaultRouter = this._createDefaultRouter(router);
-
-		// Initialize Bun server
-		this.httpServer = Bun.serve({
+		/**
+		 * Settles once listening, and in development once the client's first build is done; rejects when the port is
+		 * taken
+		 * @type {Promise<Server>}
+		 */
+		this.ready = serve({
 			port,
 			hostname,
-			fetch: defaultRouter,
+			build,
+			router: this._createDefaultRouter(router),
 			websocket: {
 				open: socket => {
-					if (socket.data.hotReload) return hotReload.websocket.open(socket);
-
 					const clientId = socket.data.clientId;
 					this.clients[clientId] = socket;
 					this.logger.info('WebSocket connected', {
@@ -85,8 +107,6 @@ export default class Server {
 					}
 				},
 				close: (socket, code, reason) => {
-					if (socket.data.hotReload) return hotReload.websocket.close(socket);
-
 					const clientId = socket.data.clientId;
 					delete this.clients[clientId];
 					this.logger.info('WebSocket closed', {
@@ -122,41 +142,58 @@ export default class Server {
 					}
 				},
 			},
+		}).then(httpServer => {
+			this.httpServer = httpServer;
+
+			if (database && Game) database.onReady(() => this._loadSavedGames());
+
+			return this;
 		});
 
-		this.port = this.httpServer.port;
-		this.url = this.httpServer.url;
-		this.hostname = this.httpServer.hostname;
-
-		this.logger.info(`Server listening on ${this.hostname}:${this.port}`);
-
-		// Load games from database if available
-		if (database && Game) {
-			database.onReady?.(() => {
-				const savedGames = Object.values(database.collections?.games?.read() || {});
-				let loaded = 0;
-
-				// One record that can't be restored skips that game, not the rest of them, nor the server
-				for (const saveState of savedGames) {
-					try {
-						this._constructGame({ saveState });
-						loaded++;
-					} catch (error) {
-						this.logger.warning('Skipping a saved game that could not be restored', {
-							gameId: saveState?.id,
-							error: error.message,
-						});
-					}
-				}
-
-				this.logger.info(`Loaded ${loaded} of ${savedGames.length} games from database`);
-			});
-		}
+		devConsole(commands && (command => commands(command, this)));
 
 		// Start health monitoring if logger supports it
 		if (verbosity >= 1) {
 			this.startHealthMonitoring();
 		}
+	}
+
+	/** @returns {number} The port listened on, or the one asked for until listening */
+	get port() {
+		return this.httpServer?.port ?? this.requestedPort;
+	}
+
+	/** @returns {URL|undefined} The server's URL, once listening */
+	get url() {
+		return this.httpServer?.url;
+	}
+
+	/** @returns {string|undefined} The hostname bound, once listening */
+	get hostname() {
+		return this.httpServer?.hostname;
+	}
+
+	/**
+	 * Restore the saved games. One record that can't be restored skips that game, not the rest of them, nor the server.
+	 * @private
+	 */
+	_loadSavedGames() {
+		const savedGames = Object.values(this.database.collections?.games?.read() || {});
+		let loaded = 0;
+
+		for (const saveState of savedGames) {
+			try {
+				this._constructGame({ saveState });
+				loaded++;
+			} catch (error) {
+				this.logger.warning('Skipping a saved game that could not be restored', {
+					gameId: saveState?.id,
+					error: error.message,
+				});
+			}
+		}
+
+		this.logger.info(`Loaded ${loaded} of ${savedGames.length} games from database`);
 	}
 
 	/**
@@ -241,42 +278,18 @@ export default class Server {
 	 * Create default router that handles WebSocket upgrade and delegates to custom router
 	 * @private
 	 * @param {Function} customRouter - Optional custom router function
-	 * @returns {Function} Combined router function
+	 * @returns {Function} Combined router function, for serve
 	 */
 	_createDefaultRouter(customRouter) {
-		return request => {
-			// A socket opened, or a write sent, by another site's page in a player's browser: refused before anything
-			// hears it. WebSockets get no CORS protection of their own.
-			if (!sameOrigin(request)) return new Response('Cross-origin request refused', { status: 403 });
+		return (request, httpServer) => {
+			// In development serve settles after the client's first build, and requests arrive before that
+			this.httpServer ??= httpServer;
 
-			if (hotReload.upgrade(request, this.httpServer)) return;
-
-			const url = new URL(request.url);
-
-			// Handle WebSocket upgrade
-			if (url.pathname === this.wsPath) {
-				const upgraded = this.httpServer.upgrade(request, {
-					data: { clientId: this._generateClientId() },
-				});
-				if (upgraded) return; // WebSocket handled
+			if (new URL(request.url).pathname === this.wsPath) {
+				if (httpServer.upgrade(request, { data: { clientId: simpleId() } })) return;
 			}
 
-			// Delegate to custom router if provided
-			if (customRouter) {
-				return customRouter(this)(request);
-			}
-
-			// Default 404 if no custom router
-			return new Response('Not Found', { status: 404 });
+			return customRouter?.(this)(request, httpServer);
 		};
-	}
-
-	/**
-	 * Generate unique client ID
-	 * @private
-	 * @returns {string} Client ID
-	 */
-	_generateClientId() {
-		return Math.random().toString(36).substring(2, 9);
 	}
 }

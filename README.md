@@ -254,23 +254,31 @@ const server = new Server({
 	wsPath: '/ws', // Optional, the game socket's path
 	logger: myLogger, // Optional: { info, warning, error, debug }, defaults to a console logger
 	verbosity: 3, // 0-3, controls logging detail
+	build: { entrypoints: ['client/index.html'] }, // Optional, buildClient's options for development's watch
+	devConsole: (command, server) => {
+		/* a line typed into the dev terminal that isn't b or stop */
+	},
 });
+
+await server.ready; // Listening (and in development, the client built); rejects "Port 3000 is already in use"
 
 // Broadcast to all connected clients
 server.socketBroadcast({ type: 'announcement', message: 'Hello!' });
-
-// Development: build the client and reload pages after each rebuild
-import { hotReload } from '@vanilla-bean/components/app';
-
-if (process.env.NODE_ENV === 'development') await hotReload.watch();
 ```
+
+The Server runs on `serve` from `@vanilla-bean/components/app`, so a game wires none of this itself:
+
+- Refuses sockets and writes sent by another site's page (`sameOrigin`), before the app's router or the game socket hears them
+- A router that throws gets an answer instead of a dropped request (`withErrors`): an error with a 4xx `status` answers `{ error: message }` with it, anything else a 500; a path the router leaves gets a 404
+- In development (`NODE_ENV=development`), builds the client, rebuilds it when a file it was built from changes, and reloads the pages that loaded `@vanilla-bean/components/app/reloadOnBuild`
+- In development, the terminal takes `b` (rebuild and reload) and `stop`; any other line goes to the `devConsole` option with the Server (`devConsole` from the kit)
+
+`server.port`, `server.url` and `server.hostname` come from the listening server: `port` is the one asked for until then, `url` and `hostname` are undefined. Saved games load once listening.
 
 **Features:**
 
 - WebSocket client connection tracking
-- Refuses sockets and writes sent by another site's page (`sameOrigin` from `@vanilla-bean/components/app`), before the app's router or the game socket hears them
 - Broadcasting to all clients
-- Accepts the page reload sockets of `hotReload` (from `@vanilla-bean/components/app`)
 - Health monitoring with periodic stats
 - Optional database integration: a `Database` instance, or a file path that the Server opens with its own logger
 - Optional Game class integration

@@ -10,6 +10,12 @@ import Game from './Game.js';
 
 const quietLogger = { info: () => {}, warning: () => {}, error: () => {}, debug: () => {} };
 
+// Not development: serve would watch and build a client, and devConsole would read the terminal
+const nodeEnv = process.env.NODE_ENV;
+
+beforeAll(() => (process.env.NODE_ENV = 'production'));
+afterAll(() => (process.env.NODE_ENV = nodeEnv));
+
 const temporaryFilePath = () =>
 	path.join(os.tmpdir(), `server-test-${Date.now()}-${Math.random().toString(36).slice(2)}.json`);
 
@@ -65,7 +71,7 @@ describe('Server sockets', () => {
 		directory = fs.mkdtempSync(path.join(os.tmpdir(), 'server-test-'));
 		fs.writeFileSync(path.join(directory, 'index.js'), 'globalThis.loaded = true;\n');
 		await hotReload.watch({ entrypoints: [path.join(directory, 'index.js')], outdir: path.join(directory, 'build') });
-		server = new Server({ port: 0, logger: quietLogger });
+		server = await new Server({ port: 0, logger: quietLogger }).ready;
 	});
 
 	afterAll(() => {
@@ -139,6 +145,64 @@ describe('Server sockets', () => {
 	});
 });
 
+describe('Server requests', () => {
+	let server;
+	let DomResponse;
+
+	// Responses the server makes are Bun's own, not the test DOM's
+	beforeAll(async () => {
+		DomResponse = globalThis.Response;
+		globalThis.Response = (await Bun.fetch('data:,')).constructor;
+
+		const router = () => request => {
+			const { pathname } = new URL(request.url);
+
+			if (pathname === '/full') throw Object.assign(new Error('Room is full'), { status: 409 });
+			if (pathname === '/broken') throw new Error('a bug');
+			if (pathname === '/hello') return new Response('hi');
+		};
+
+		server = await new Server({ port: 0, router, logger: quietLogger }).ready;
+	});
+
+	afterAll(() => {
+		server.httpServer.stop(true);
+		globalThis.Response = DomResponse;
+	});
+
+	test("answers the router's response, a 404 for what it leaves, and a thrown error in words", async () => {
+		const get = pathname => Bun.fetch(new URL(pathname, server.url));
+
+		expect(await (await get('/hello')).text()).toBe('hi');
+		expect((await get('/nothing')).status).toBe(404);
+
+		const full = await get('/full');
+
+		expect(full.status).toBe(409);
+		expect(await full.json()).toEqual({ error: 'Room is full' });
+		expect((await get('/broken')).status).toBe(500);
+	});
+
+	test('a taken port rejects ready, saying so', async () => {
+		const taken = new Server({ port: server.port, logger: quietLogger });
+
+		await expect(taken.ready).rejects.toThrow(`Port ${server.port} is already in use`);
+	});
+
+	test('a game socket gets a short id', async () => {
+		const { WebSocket: NodeSocket } = await import('ws');
+		const socket = new NodeSocket(`ws://localhost:${server.port}/ws`);
+
+		await new Promise(resolve => socket.on('open', resolve));
+		await new Promise(resolve => setTimeout(resolve, 50));
+
+		expect(Object.keys(server.clients)[0]).toMatch(/^[A-Za-z0-9]{5}$/);
+
+		socket.close();
+		await new Promise(resolve => setTimeout(resolve, 50));
+	});
+});
+
 // A game whose constructor throws after the base class has registered it, like one whose world fails to generate
 class FragileGame extends Game {
 	constructor(options) {
@@ -201,7 +265,7 @@ describe('Server games that fail to construct', () => {
 		const warnings = [];
 		const logger = { ...quietLogger, warning: (message, data) => warnings.push({ message, data }) };
 		const database = new Database({ filePath, logger: quietLogger });
-		server = new Server({ port: 0, database, Game: FragileGame, logger });
+		server = await new Server({ port: 0, database, Game: FragileGame, logger }).ready;
 		await ready(database);
 
 		expect(Object.keys(server.games)).toEqual(['good']);

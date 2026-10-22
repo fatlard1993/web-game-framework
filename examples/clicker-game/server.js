@@ -293,6 +293,8 @@ const server = new Server({
 	},
 });
 
+await server.ready;
+
 console.log('🎮 Clicker Game Server');
 console.log(`🌐 Server running at ${server.url}`);
 console.log(`💾 Database: ./data/clicker-games.json`);
