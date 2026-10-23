@@ -98,8 +98,18 @@ const router = server => async request => {
 			);
 		}
 
+		const body = await request.json().catch(() => undefined);
+		if (body === undefined) {
+			return Response.json(
+				{
+					success: false,
+					error: 'Malformed JSON body',
+				},
+				{ status: 400 },
+			);
+		}
+
 		try {
-			const body = await request.json();
 			const playerName = body.playerName || 'Anonymous';
 
 			const player = game.addPlayer(playerName);

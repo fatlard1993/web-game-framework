@@ -28,6 +28,9 @@ export default function basicGameRoutes(options = {}) {
 	const logger = options.logger || console;
 	const basePath = options.basePath || '';
 
+	const readBody = request => request.json().catch(() => undefined);
+	const malformedBody = () => Response.json({ error: 'Malformed JSON body' }, { status: 400 });
+
 	return async (request, server) => {
 		let match;
 
@@ -51,8 +54,10 @@ export default function basicGameRoutes(options = {}) {
 		// POST /games - Create new game
 		match = requestMatch('POST', `${basePath}/games`, request);
 		if (match) {
+			const body = await readBody(request);
+			if (body === undefined) return malformedBody();
+
 			try {
-				const body = await request.json();
 				const game = server.createGame(body);
 
 				logger.info('Game created', { gameId: game.id, name: game.name });
@@ -74,8 +79,10 @@ export default function basicGameRoutes(options = {}) {
 				return Response.json({ message: 'Game not found' }, { status: 404 });
 			}
 
+			const body = await readBody(request);
+			if (body === undefined) return malformedBody();
+
 			try {
-				const body = await request.json();
 				const { playerId, name } = body;
 
 				// If player already exists, return existing player

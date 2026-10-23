@@ -43,4 +43,16 @@ describe('basicGameRoutes', () => {
 
 		expect(response.status).toBe(404);
 	});
+
+	test('returns 400 with an error for a malformed body on create and join', async () => {
+		const routes = basicGameRoutes({ logger: quietLogger });
+		const malformed = path => new Request(`http://localhost${path}`, { method: 'POST', body: '{not json' });
+
+		for (const path of ['/games', '/games/abc/join']) {
+			const response = await routes(malformed(path), mockServer());
+
+			expect(response.status).toBe(400);
+			expect(await response.json()).toEqual({ error: 'Malformed JSON body' });
+		}
+	});
 });
