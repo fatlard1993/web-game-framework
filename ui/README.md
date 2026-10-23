@@ -74,6 +74,7 @@ Each component accepts options for customization:
 - `containerComponent` - Custom wrapper for game list
 - `noGamesText` - Message when no games exist
 - `buttons` - Customize button labels
+- `watch` - `false` leaves out each game's Watch link, for a game with no watch screen
 
 **Join.js**:
 

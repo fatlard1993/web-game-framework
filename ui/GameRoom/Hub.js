@@ -13,6 +13,7 @@ export default class Hub extends View {
 		gamesFoundText: {},
 		gamesFoundTextFn: {},
 		buttons: {},
+		watch: { default: true },
 		popoverOptions: {},
 	};
 
@@ -135,13 +136,14 @@ export default class Hub extends View {
 						href: `#/join/${id}`,
 						variant: 'button',
 					}),
-					new Link({
-						content: this.options.buttons?.watchText || 'Watch',
-						href: `#/watch/${id}`,
-						variant: 'button',
-					}),
+					this.options.watch &&
+						new Link({
+							content: this.options.buttons?.watchText || 'Watch',
+							href: `#/watch/${id}`,
+							variant: 'button',
+						}),
 					new GameListText({ content: `${players.length}` }),
-				],
+				].filter(Boolean),
 			})),
 		});
 
