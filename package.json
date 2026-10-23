@@ -55,7 +55,7 @@
 		"prepare:githooks": "[ -n \"$CI\" ] && exit 0 || (git config --local core.hooksPath .githooks || echo 'Can not set git hooks')",
 		"lint": "bun --bun eslint",
 		"lint:fix": "bun --bun eslint --fix",
-		"format": "bun run lint:fix && bun --bun prettier --write . | grep -q unchanged",
+		"format": "bun run lint:fix && bun --bun prettier --write . --log-level warn",
 		"test": "bun test",
 		"test:watch": "bun test --watch"
 	},

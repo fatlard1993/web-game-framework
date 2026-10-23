@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+# Lint, tests, and the pushed lld documents: the library's shared pre-push
+sh node_modules/@vanilla-bean/components/githooks/pre-push "$@" || exit 1
+
+# Checked, not fixed: a fix made now would land beside the pushed commits, not in them
+bun --bun prettier --check . --log-level warn || { echo 'Not formatted: bun run format, then commit it'; exit 1; }

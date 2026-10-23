@@ -662,7 +662,7 @@ No polyfills provided. Use transpilation for legacy browser support if needed.
 3. **Follow existing patterns** - Check similar modules for code style
 4. **Add JSDoc comments** - Document all public APIs
 5. **Update documentation** - Include README updates and examples
-6. **Test thoroughly** - Run `bun test` and the examples; the pre-commit hook runs the changed folders' tests and `bun run format`
+6. **Test thoroughly** - Run `bun test` and the examples; the pre-push hook runs the lint, the tests and a formatting check
 
 ## Status
 
