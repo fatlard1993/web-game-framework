@@ -40,7 +40,6 @@ const socket = connectSocket('/ws', {
 	},
 });
 
-socket.addEventListener('open', () => console.log('WebSocket connected'));
 socket.addEventListener('error', error => console.error('WebSocket error:', error));
 socket.addEventListener('close', event => console.error('WebSocket closed:', event));
 
