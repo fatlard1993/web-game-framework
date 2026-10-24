@@ -31,12 +31,12 @@ const notify = options => {
 
 const socket = connectSocket('/ws', {
 	onLost: () => {
-		lost = notify({ type: 'warning', content: 'Connection lost. Reconnecting...', timeout: 0 });
+		lost = notify({ intent: 'warning', content: 'Connection lost. Reconnecting...', timeout: 0 });
 	},
 	onRestored: () => {
 		if (lost?.elem?.isConnected) lost.destroy();
 		lost = null;
-		notify({ type: 'success', content: 'Connection restored.', timeout: 2000 });
+		notify({ intent: 'success', content: 'Connection restored.', timeout: 2000 });
 	},
 });
 

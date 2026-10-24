@@ -40,7 +40,7 @@ export default class Join extends View {
 
 								if (join.status !== 'success') {
 									return new Notify({
-										type: 'error',
+										intent: 'danger',
 										content: join.body?.message || join.body?.error || String(join.body),
 									});
 								}
@@ -70,7 +70,7 @@ export default class Join extends View {
 		const game = await getGame(this.options.gameId);
 
 		if (game.response.status !== 200) {
-			new Notify({ type: 'error', content: game.body?.message || game.response.statusText });
+			new Notify({ intent: 'danger', content: game.body?.message || game.response.statusText });
 
 			localStorage.removeItem(this.options.gameId);
 

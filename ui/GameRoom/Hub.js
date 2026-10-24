@@ -57,7 +57,7 @@ export default class Hub extends View {
 		const games = await getGames();
 
 		if (games.response.status !== 200) {
-			new Notify({ type: 'error', content: games.body?.message || games.response.statusText });
+			new Notify({ intent: 'danger', content: games.body?.message || games.response.statusText });
 			return;
 		}
 
@@ -108,7 +108,7 @@ export default class Hub extends View {
 								x: event.clientX,
 								y: event.clientY,
 								content: 'Copied link to clipboard!',
-								type: 'success',
+								intent: 'success',
 								timeout: 1300,
 							});
 						},

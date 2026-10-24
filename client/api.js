@@ -1,4 +1,4 @@
-import { GET, POST, DELETE } from '@vanilla-bean/hypertether';
+import { GET, POST, DELETE } from '@vanilla-bean/components';
 import gameContext from './gameContext.js';
 
 /**

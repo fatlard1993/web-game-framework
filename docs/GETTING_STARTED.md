@@ -412,8 +412,7 @@ When you copy components, customize them for your game:
 
 ```js
 // client/ui/GameRoom/Hub.js (customized)
-import { Component, styled } from '@vanilla-bean/components';
-import { GET } from '@vanilla-bean/hypertether';
+import { Component, GET, styled } from '@vanilla-bean/components';
 
 const GameCard = styled(
 	Component,
