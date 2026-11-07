@@ -12,6 +12,7 @@ module.exports = {
 		'multiplayer',
 		'namespacing',
 		'os',
+		'positionals',
 		'reconnection',
 		'reconnections',
 		'rss',

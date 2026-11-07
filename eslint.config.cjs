@@ -1,7 +1,8 @@
 const globals = require('globals');
 const jsdoc = require('eslint-plugin-jsdoc');
 
-// The framework is a library: its JSDoc stays required everywhere but the examples, as in the components library
+// The framework is a library: its JSDoc stays required everywhere but the examples and the scaffold, as in the components
+// library
 const jsdocRequirements = Object.fromEntries(
 	Object.entries(jsdoc.configs['flat/recommended'].rules).filter(([name]) => name.startsWith('jsdoc/require-')),
 );
@@ -17,7 +18,7 @@ module.exports = [
 		},
 	},
 	{
-		files: ['core/**/*', 'utils/**/*', 'examples/*/server.js', 'examples/*/build.js'],
+		files: ['core/**/*', 'utils/**/*', 'bin/**/*', 'scaffold/*.js', 'examples/*/server.js', 'examples/*/build.js'],
 		languageOptions: {
 			globals: {
 				...globals.node,
@@ -31,10 +32,17 @@ module.exports = [
 		},
 	},
 	{
-		files: ['**/examples/**/*', 'examples/*'],
+		files: ['**/examples/**/*', 'examples/*', 'scaffold/**/*'],
 		rules: {
 			'no-console': 'off',
 			'jsdoc/require-jsdoc': 'off',
+		},
+	},
+	{
+		// The scaffold imports the framework as the package a game installs, which this checkout isn't
+		files: ['scaffold/**/*'],
+		rules: {
+			'import/no-unresolved': 'off',
 		},
 	},
 ];

@@ -55,6 +55,17 @@ import '@fatlard1993/web-game-framework/utils/exit'; // exit handling for the se
 
 ## Quick Start
 
+### A whole game, from the scaffold
+
+`scaffold/` is a small playable game: a server with the framework's routes and save file, a `Game` whose state is broadcast on every change, and a page with the framework's lobby and a `Play` view that sends taps and draws everyone's count. `new-game` copies it, named after its folder, with the dependencies filled in:
+
+```bash
+bun bin/new-game.js ~/Projects/moon-game   # from a checkout; `bun new-game` where the framework is installed
+cd ~/Projects/moon-game && bun install && bun run dev
+```
+
+The folder has to be empty or missing. `--framework <spec>` and `--vbc <spec>` set the dependency specs (a project that pins the framework to a commit passes its own, so the game pins the same); `--name` the package name. The copy has a `CLAUDE.md` saying where things are and where the libraries' docs live, so a Claude Code session in it starts oriented.
+
 ### Minimal Server (~3 lines)
 
 The simplest possible multiplayer server with WebSocket support:
@@ -529,6 +540,10 @@ bun server.js
 ```
 
 **[View clicker example →](./examples/clicker-game/README.md)**
+
+### The scaffold
+
+`scaffold/` is the smaller, complete game that `new-game` copies (see [Quick Start](#quick-start)): the same loop as the clicker, in a few files, on the framework's lobby UI.
 
 For the lobby UI in use, see [humanity](https://github.com/fatlard1993/humanity), [void-driller](https://github.com/fatlard1993/void-driller) and [sorcery-and-savagery](https://github.com/fatlard1993/sorcery-and-savagery).
 

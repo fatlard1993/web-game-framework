@@ -23,13 +23,19 @@
 		"./ui/layout": "./ui/layout/index.js",
 		"./ui/*": "./ui/*.js",
 		"./utils": "./utils/index.js",
-		"./utils/*": "./utils/*.js"
+		"./utils/*": "./utils/*.js",
+		"./new-game": "./bin/new-game.js"
+	},
+	"bin": {
+		"new-game": "./bin/new-game.js"
 	},
 	"files": [
 		"core",
 		"client",
 		"ui",
 		"utils",
+		"bin",
+		"scaffold",
 		"index.js",
 		"README.md"
 	],

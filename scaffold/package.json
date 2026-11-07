@@ -1,0 +1,16 @@
+{
+	"name": "{{name}}",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "NODE_ENV=development bun --hot server.js",
+		"start": "NODE_ENV=production bun server.js",
+		"build": "vbc-build",
+		"test": "bun test"
+	},
+	"dependencies": {
+		"@fatlard1993/web-game-framework": "{{framework}}",
+		"@vanilla-bean/components": "{{vbc}}"
+	}
+}
