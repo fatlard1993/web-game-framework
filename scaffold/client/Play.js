@@ -93,7 +93,7 @@ export default class Play extends View {
 		draw(game);
 		this.addCleanup(
 			'socket',
-			onMessage(message => message.id === gameId && message.update === 'state' && draw(message)),
+			onMessage(message => message.gameId === gameId && message.update === 'state' && draw(message)),
 		);
 	}
 }

@@ -173,8 +173,9 @@ export default class Game {
 		// Augment data (hook)
 		const augmentedData = this.augmentBroadcastData(key, data);
 
-		// Prepare safe data structure
-		const safeData = { id: this.id, update: key };
+		// Prepare safe data structure. `id` is the game's unless the data brings its own (removePlayer's is the
+		// player's), so `gameId` always names the game
+		const safeData = { id: this.id, gameId: this.id, update: key };
 
 		// Copy properties, avoiding cyclic references
 		if (augmentedData && typeof augmentedData === 'object') {
