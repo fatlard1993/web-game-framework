@@ -32,14 +32,32 @@ const Scores = styled(
 	Component,
 	({ space }) => `
 		display: flex;
-		flex-direction: column;
-		gap: ${space.sm};
-		font-size: 1.4em;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: ${space.lg};
+		font-size: 2rem;
 	`,
 );
 
-// One player's screen: a big button, and everyone's taps. What it shows comes from the server's state and nothing
-// else: a tap sends a message, and the number changes when the new state comes back, on this screen and every other.
+const Score = styled(
+	Component,
+	({ colors, radius, space }) => `
+		display: flex;
+		align-items: center;
+		gap: ${space.sm};
+		padding: ${space.sm} ${space.md};
+		border-radius: ${radius.pill};
+		background: ${colors.alpha(colors.white, 0.08)};
+
+		&.me {
+			background: ${colors.alpha(colors.blue, 0.35)};
+		}
+	`,
+);
+
+// One player's screen: a big star to tap, and everyone's stars, each player shown as the animal they picked. What it
+// shows comes from the server's state and nothing else: a tap sends a message, and the number changes when the new
+// state comes back, on this screen and every other.
 export default class Play extends View {
 	static schema = { gameId: {} };
 
@@ -47,7 +65,7 @@ export default class Play extends View {
 		super(
 			{
 				...options,
-				toolbar: { heading: '', left: [new Link({ textContent: 'Leave', href: '#/hub', variant: 'button' })] },
+				toolbar: { heading: '', left: [new Link({ textContent: '🏠', href: '#/', variant: 'button' })] },
 			},
 			...children,
 		);
@@ -63,16 +81,15 @@ export default class Play extends View {
 		const playerId = localStorage.getItem(gameId);
 		const { body: game, response } = await getGame(gameId, { invalidateAfter: 0 });
 
-		// Not in this game (or the game is gone): the join page sorts it out
+		// Not in this game (or the game is gone): the start screen sorts it out
 		if (response.status !== 200 || !game.players.some(({ id }) => id === playerId)) {
-			window.location.href = `#/join/${gameId}`;
+			window.location.href = '#/';
 
 			return;
 		}
 
 		gameContext.gameId = gameId;
 		gameContext.playerId = playerId;
-		this._toolbar.options.heading = game.name;
 
 		const board = new Board({ appendTo: this._body });
 		const scores = new Scores();
@@ -87,7 +104,11 @@ export default class Play extends View {
 		const draw = ({ players, state }) => {
 			scores.empty();
 			for (const player of players)
-				new Component({ appendTo: scores, textContent: `${player.name}: ${state.taps[player.id] ?? 0}` });
+				new Score({
+					appendTo: scores,
+					addClass: player.id === playerId ? 'me' : '',
+					textContent: `${player.name} ${state.taps[player.id] ?? 0}`,
+				});
 		};
 
 		draw(game);

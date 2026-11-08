@@ -12,7 +12,8 @@ A web game on `@fatlard1993/web-game-framework` and `@vanilla-bean/components`. 
 
 - `server.js`: the `Server`, its routes (`basicGameRoutes`: list, create, join, exit, delete), the built page, and the socket handing each player's message to its game's `receive`.
 - `Game.js`: one running game. `state` is what's true for everyone; `receive` acts on a player's message; `announce` broadcasts the whole picture; `toClient` and `toSaveState` say what a page gets and what survives a restart (`data/games.json`).
-- `client/index.js`: the page's routes: the framework's hub, create and join views, and this game's `Play`.
+- `client/index.js`: the page's routes: this game's `Start` and `Play`, and the framework's hub, create and join views at `#/hub` for grown-ups and phones.
+- `client/Start.js`: the first screen. The player picks an animal and presses play; everyone joins the one game on this server, made the first time someone plays.
 - `client/Play.js`: what a player sees and does. It sends `{ gameId, playerId, type }` on the socket and redraws on each `update: 'state'`.
 
 ## The libraries, by their docs
@@ -21,6 +22,10 @@ Read these before building anything the framework or the component library might
 
 - `node_modules/@fatlard1993/web-game-framework/README.md`, then `docs/GETTING_STARTED.md`; `ui/README.md` for the lobby views and how to customize them.
 - `node_modules/@vanilla-bean/components/README.md` and `docs/GETTING_STARTED.md`; every component's folder holds a `<Name>.lld.md` stating what it does and why (`components/Button/Button.lld.md`, `components/Dialog/Dialog.lld.md`, ...); the server helpers are in `app/README.md`.
+
+## Who plays it
+
+The players may be young and may not read yet. Every control is a picture (an emoji) with few or no words, big enough for a thumb, and the game explains itself by being played, not by text. Keep it that way as the game grows: a new thing to do is a new big picture to tap, a new thing to see is drawn, not described.
 
 ## How this project is written
 
