@@ -18,6 +18,7 @@ import consoleLogger from './consoleLogger.js';
  * Lifecycle hooks (override in subclass):
  * - onPlayerAdded(player) - Called after player is added
  * - onPlayerRemoved(playerId) - Called after player is removed
+ * - onPresence(playerId, online) - Called when a player's page opens on the game or the last one closes
  * @example
  * ```js
  * class MyGame extends Game {
@@ -56,6 +57,8 @@ export default class Game {
 
 		// Player management
 		this.players = new Players();
+		// Who has a page open on the game now (see setOnline): kept apart from the players, so a save never carries it
+		this.online = new Set();
 
 		// Event routing
 		this.events = new EventRouter({
@@ -117,7 +120,7 @@ export default class Game {
 			id: this.id,
 			name: this.name,
 			options: this.options,
-			players: [...this.players.values()],
+			players: [...this.players.values()].map(player => ({ ...player, online: this.online.has(player.id) })),
 		};
 	}
 
@@ -218,6 +221,8 @@ export default class Game {
 		};
 
 		this.players.set(id, player);
+		// Joining is being here
+		this.online.add(id);
 
 		// Hook: onPlayerAdded
 		if (typeof this.onPlayerAdded === 'function') {
@@ -230,12 +235,31 @@ export default class Game {
 	}
 
 	/**
+	 * Whether a player has a page open on the game: the Server says so as their page announces itself and when its last
+	 * connection closes. A player who closed the page stays a player (their place and score kept for when they're back)
+	 * but is no longer here. Broadcasts `presence` ({ id, online }) on a change, and calls the onPresence(id, online)
+	 * hook, where a game takes a ship out of space or a hand off the table.
+	 * @param {string} id - Player ID
+	 * @param {boolean} online - Whether they're here
+	 */
+	setOnline(id, online) {
+		if (!this.players.has(id) || online === this.online.has(id)) return;
+		if (online) this.online.add(id);
+		else this.online.delete(id);
+
+		if (typeof this.onPresence === 'function') this.onPresence(id, online);
+
+		this.broadcast('presence', { id, online });
+	}
+
+	/**
 	 * Remove a player from the game
 	 * @param {string} id - Player ID
 	 * @returns {string} The removed player ID
 	 */
 	removePlayer(id) {
 		this.players.delete(id);
+		this.online.delete(id);
 
 		// Hook: onPlayerRemoved
 		if (typeof this.onPlayerRemoved === 'function') {

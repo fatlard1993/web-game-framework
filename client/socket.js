@@ -2,6 +2,8 @@
 import { Notify } from '@vanilla-bean/components';
 import { connectSocket } from '@vanilla-bean/components/utils';
 
+import gameContext from './gameContext.js';
+
 /**
  * WebSocket wrapper with automatic reconnection and listener management
  *
@@ -39,6 +41,30 @@ const socket = connectSocket('/ws', {
 		notify({ intent: 'success', content: 'Connection restored.', timeout: 2000 });
 	},
 });
+
+// The page says which game and player it's open on, so the server knows who is here: when it connects, as soon as it
+// has a game and player, and now and then after (a reconnect is a connection like any other)
+const PRESENCE_CHECK_MS = 2000;
+const PRESENCE_AGAIN_MS = 30_000;
+let announced = '';
+let announcedAt = 0;
+
+const announce = () => {
+	const { gameId, playerId } = gameContext;
+	const which = gameId && playerId ? `${gameId}\n${playerId}` : '';
+
+	if (!which || socket.readyState !== WebSocket.OPEN) return;
+	if (which === announced && Date.now() - announcedAt < PRESENCE_AGAIN_MS) return;
+	socket.send(JSON.stringify({ type: 'presence', gameId, playerId }));
+	announced = which;
+	announcedAt = Date.now();
+};
+
+socket.addEventListener('open', () => {
+	announced = '';
+	announce();
+});
+if (typeof setInterval === 'function') setInterval(announce, PRESENCE_CHECK_MS);
 
 socket.addEventListener('error', error => console.error('WebSocket error:', error));
 socket.addEventListener('close', event => console.error('WebSocket closed:', event));

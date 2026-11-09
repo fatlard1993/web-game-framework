@@ -31,6 +31,9 @@ export const STATUS_PATH = '/.well-known/web-game';
  * ```
  */
 export default class Server {
+	/** How long a closed page's player stays here, for a reload to come back within */
+	static LEFT_AFTER_MS = 5000;
+
 	/**
 	 * @param {object} options - Server configuration
 	 * @param {number} options.port - Port to listen on
@@ -116,6 +119,7 @@ export default class Server {
 				close: (socket, code, reason) => {
 					const clientId = socket.data.clientId;
 					delete this.clients[clientId];
+					this._leftPage(socket.data.presence);
 					this.logger.info('WebSocket closed', {
 						clientId,
 						code,
@@ -136,6 +140,13 @@ export default class Server {
 							clientId,
 							type: parsed.type || 'unknown',
 						});
+
+						// A page saying which game and player it is: the framework's own, not the game's to receive
+						if (parsed.type === 'presence') {
+							this._onPage(socket, parsed);
+
+							return;
+						}
 
 						// Call custom message handler if provided
 						if (websocket?.message) {
@@ -163,6 +174,36 @@ export default class Server {
 		if (verbosity >= 1) {
 			this.startHealthMonitoring();
 		}
+	}
+
+	/**
+	 * A page's announcement of the game and player it's open on (sent by the client's socket when it connects and now
+	 * and then after): that player is here
+	 * @param {object} socket - The page's socket
+	 * @param {{ gameId: string, playerId: string }} presence - Which game and player
+	 */
+	_onPage(socket, { gameId, playerId }) {
+		if (typeof gameId !== 'string' || typeof playerId !== 'string') return;
+
+		socket.data.presence = { gameId, playerId };
+		this.games[gameId]?.setOnline?.(playerId, true);
+	}
+
+	/**
+	 * A page's connection closed: once a moment has passed with no other page open on that player (a reload comes back
+	 * within it), they're no longer here
+	 * @param {{ gameId: string, playerId: string }} [presence] - Which game and player the page was
+	 */
+	_leftPage(presence) {
+		if (!presence) return;
+
+		setTimeout(() => {
+			const still = Object.values(this.clients).some(
+				other => other.data.presence?.gameId === presence.gameId && other.data.presence?.playerId === presence.playerId,
+			);
+
+			if (!still) this.games[presence.gameId]?.setOnline?.(presence.playerId, false);
+		}, Server.LEFT_AFTER_MS).unref?.();
 	}
 
 	/** @returns {number} The port listened on, or the one asked for until listening */

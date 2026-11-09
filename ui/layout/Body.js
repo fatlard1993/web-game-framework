@@ -18,7 +18,14 @@ export default class Body extends Component {
 				styles: () => `
 					overflow: hidden auto;
 					flex: 1;
+					min-height: 0;
 					position: relative;
+					/* A column, so a game's own view can take the whole of it (flex: 1) */
+					display: flex;
+					flex-direction: column;
+					/* Its own stacking, so the background sits under whatever a game puts here without moving it out of
+					   the way it's laid out (a full-screen view positioned absolutely stays so) */
+					isolation: isolate;
 					background-image: none;
 
 					${
@@ -34,16 +41,11 @@ export default class Body extends Component {
 						background-image: url('${backgroundImage}');
 						background-size: cover;
 						background-position: center;
-						z-index: 0;
 						animation: parallax-drift 120s ease-in-out infinite;
+						z-index: -1;
 					}
 					`
 							: ''
-					}
-
-					& > * {
-						position: relative;
-						z-index: 1;
 					}
 
 					@keyframes parallax-drift {
