@@ -2,6 +2,7 @@ import { Link, Button, Notify, EmptyState, copyToClipboard } from '@vanilla-bean
 
 import { View } from '../layout/index.js';
 import { getGames, onMessage } from '../../client/index.js';
+import { joinUrl } from '../../client/joinUrl.js';
 import { GameList, GameListText } from './GameList.js';
 import GameInfoPopover from './GameInfoPopover.js';
 
@@ -99,10 +100,11 @@ export default class Hub extends View {
 					new GameListText({ content: name }),
 					new Button({
 						content: this.options.buttons?.linkText || 'Copy Link',
-						onPointerPress: event => {
+						onPointerPress: async event => {
 							event.stopPropagation();
 
-							copyToClipboard(`${window.location.origin}#/join/${id}`);
+							// An address a phone on the network can open, not localhost
+							copyToClipboard(await joinUrl(id));
 
 							new Notify({
 								x: event.clientX,
