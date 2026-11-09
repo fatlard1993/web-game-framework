@@ -11,6 +11,6 @@ bun run dev
 
 Then open http://localhost:3000, make a game, and join it from any device on the network.
 
-- `server.js` runs the server and routes; `Game.js` is a game's state and rules.
-- `client/` is the page: the framework's lobby, and `Play.js` for the game itself.
+- `rules.js` is what the game is, shared by the server and the page; `Game.js` runs it: its loop, what players can do, what each page is sent.
+- `client/` is the page: the start screen, `Play.js` for the game, and the framework's lobby at `#/hub`.
 - `data/games.json` holds the games between restarts.

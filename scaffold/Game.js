@@ -1,52 +1,79 @@
-import { Game as BaseGame } from '@fatlard1993/web-game-framework';
+import { Game as BaseGame, refuse } from '@fatlard1993/web-game-framework';
 
-// One running game, on the server. `state` is what's true for everyone in it; every change to it is broadcast, and the
-// players' pages redraw from what arrives (client/Play.js) rather than from what they did. Change `state`, `receive`
-// and Play together: they are the three ends of one wire.
+import { TICK_MS, addPlayer, newState, step } from './rules.js';
+
+// One running game, on the server. Its rules are in rules.js, shared with the page; this is what runs them: the loop
+// that moves the game on, what a player can do (`actions`), and what each page is sent (`viewFor`, by publish()).
 export default class Game extends BaseGame {
+	// A save from an older shape of `state` is brought up to date before the constructor reads it: when `state` changes
+	// shape, raise `version` and add a migration, { [version]: save => { ...change save.state in place } }
+	static version = 1;
+	static migrations = {};
+	// What's never saved: where each player is heading lasts only while they hold a key
+	static transient = ['headings', 'caught'];
+
 	constructor(options) {
 		super(options);
 
 		// Back from the save file after a restart, or new
-		this.state = options.saveState?.state ?? { taps: {} };
+		this.state = options.saveState?.state ?? newState();
+		this.state.headings = {};
+		this.state.caught = [];
+		for (const id of this.players.keys()) addPlayer(this.state, id);
+
+		// The loop: stopped by itself when the game is deleted
+		this.every(TICK_MS, () => this.tick());
 	}
 
-	// What a player's page gets when it asks for the game
+	// What a player can do, from their page: act('steer', { x, y }). Each runs as the page's own player, and the game is
+	// published after; refuse('why') turns one down and their page is told why.
+	actions = {
+		steer(player, { x, y } = {}) {
+			if (!Number.isFinite(x) || !Number.isFinite(y)) refuse('Steer with a direction');
+
+			const length = Math.hypot(x, y);
+
+			this.state.headings[player.id] = length > 1 ? { x: x / length, y: y / length } : { x, y };
+		},
+	};
+
+	tick() {
+		const { moved, caught } = step(this.state, this.state.headings, TICK_MS / 1000);
+
+		this.state.caught = caught;
+		if (moved || caught.length) this.publish();
+	}
+
+	// What each page is sent: the same for everyone in this game (override it per player for a game with secrets, like
+	// a hand of cards), with who's playing and whether they're here
+	viewFor() {
+		return { state: this.savedState(), caught: this.state.caught, players: this.toClient().players };
+	}
+
 	toClient() {
-		return { ...super.toClient(), state: this.state };
+		return { ...super.toClient(), state: this.savedState() };
 	}
 
 	// What survives a restart (data/games.json)
 	toSaveState() {
-		return { ...super.toSaveState(), state: this.state };
+		return { ...super.toSaveState(), state: this.savedState() };
 	}
 
-	// The whole picture to every page: the state and who's playing, each with whether they're here (a page open on the
-	// game) or have left (their place and taps kept for when they're back)
-	announce() {
-		this.broadcast('state', { state: this.state, players: super.toClient().players });
+	onPlayerAdded(player) {
+		addPlayer(this.state, player.id);
+		this.publish();
 	}
 
-	// Something a player did, from their page: { gameId, playerId, type, ...whatever the type carries }
-	receive({ type, playerId }) {
-		if (!this.players.has(playerId)) return;
-
-		if (type === 'tap') this.state.taps[playerId] = (this.state.taps[playerId] ?? 0) + 1;
-
-		this.announce();
+	// A player's page closed: they stop where they are, and stay off the field until they're back
+	onPresence(id, online) {
+		if (!online) delete this.state.headings[id];
+		this.publish();
 	}
 
-	onPlayerAdded() {
-		this.announce();
-	}
-
-	// A player's page opened, or their last one closed
-	onPresence() {
-		this.announce();
-	}
-
-	onPlayerRemoved(playerId) {
-		delete this.state.taps[playerId];
-		this.announce();
+	onPlayerRemoved(id) {
+		delete this.state.spots[id];
+		delete this.state.scores[id];
+		delete this.state.headings[id];
+		this.publish();
 	}
 }

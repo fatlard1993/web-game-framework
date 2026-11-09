@@ -1,78 +1,51 @@
-import { Button, Component, Link, styled } from '@vanilla-bean/components';
-import { gameContext, getGame, onMessage, socket } from '@fatlard1993/web-game-framework/client';
-import { View } from '@fatlard1993/web-game-framework/ui';
+import { Button, Component, Dialog, Link, styled } from '@vanilla-bean/components';
+import { act, createInput, createSound, enterGame, isTouch } from '@fatlard1993/web-game-framework/client';
+import { JoinCard, SoundToggle, Stage, View } from '@fatlard1993/web-game-framework/ui';
 
-// The whole screen below the bar is the game's: it grows to fill it, so whatever the game becomes has all the room
-const Board = styled(
-	Component,
-	({ space }) => `
-		flex: 1;
-		min-height: 0;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		gap: ${space.xl};
-		padding: ${space.xl};
-	`,
-);
-
-const Tap = styled(
-	Button,
-	({ colors, radius }) => `
-		width: min(60vw, 240px);
-		height: min(60vw, 240px);
-		border-radius: ${radius.pill};
-		background: ${colors.blue};
-		font-size: 5rem;
-
-		&:active {
-			transform: scale(0.94);
-		}
-	`,
-);
+import { FIELD } from '../rules.js';
 
 const Scores = styled(
 	Component,
 	({ space }) => `
 		display: flex;
-		flex-wrap: wrap;
-		justify-content: center;
-		gap: ${space.lg};
-		font-size: 2rem;
+		gap: ${space.md};
+		font-size: 1.4rem;
+		white-space: nowrap;
+		overflow: hidden;
+
+		& .me { text-decoration: underline; }
 	`,
 );
 
-const Score = styled(
-	Component,
-	({ colors, radius, space }) => `
-		display: flex;
-		align-items: center;
-		gap: ${space.sm};
-		padding: ${space.sm} ${space.md};
-		border-radius: ${radius.pill};
-		background: ${colors.alpha(colors.white, 0.08)};
-
-		&.me {
-			background: ${colors.alpha(colors.blue, 0.35)};
-		}
-	`,
-);
-
-// One player's screen: a big star to tap, and everyone's stars, each player shown as the animal they picked. What it
-// shows comes from the server's state and nothing else: a tap sends a message, and the number changes when the new
-// state comes back, on this screen and every other.
+// One player's screen, or a watcher's: the field fills everything below the bar, scores and buttons sit in the bar.
+// What it shows comes from the server and nothing else: steering is an action, and the field redraws from each view
+// of the game the server sends.
 export default class Play extends View {
-	static schema = { gameId: {} };
+	static schema = { gameId: {}, watch: { default: false } };
 
 	constructor(options, ...children) {
+		const scores = new Scores();
+		const sound = createSound({
+			// Sounds go here as the game gets them: import catchSound from './sounds/catch.mp3', then { catch: catchSound }
+			effects: {},
+		});
+
 		super(
 			{
 				...options,
-				toolbar: { heading: '', left: [new Link({ textContent: '🏠', href: '#/', variant: 'button' })] },
+				toolbar: {
+					heading: '',
+					left: [new Link({ textContent: '🏠', href: '#/', variant: 'button' }), scores],
+					right: [
+						new SoundToggle({ sound }),
+						new Button({ textContent: '➕👫', title: 'Someone else joins', onPointerPress: () => this.invite() }),
+					],
+				},
 			},
 			...children,
 		);
+		this.scores = scores;
+		this.sound = sound;
 	}
 
 	build() {
@@ -81,45 +54,128 @@ export default class Play extends View {
 	}
 
 	async _init() {
-		const { gameId } = this.options;
-		const playerId = localStorage.getItem(gameId);
-		const { body: game, response } = await getGame(gameId, { invalidateAfter: 0 });
+		const { gameId, watch } = this.options;
+		let view = null;
 
-		// Not in this game (or the game is gone): the start screen sorts it out
-		if (response.status !== 200 || !game.players.some(({ id }) => id === playerId)) {
-			window.location.href = '#/';
-
-			return;
-		}
-
-		gameContext.gameId = gameId;
-		gameContext.playerId = playerId;
-
-		const board = new Board({ appendTo: this._body });
-		const scores = new Scores();
-
-		new Tap({
-			textContent: '⭐',
-			appendTo: board,
-			onPointerPress: () => socket.send({ gameId, playerId, type: 'tap' }),
+		const stage = new Stage({ appendTo: this._body, onResize: () => view && this.draw(view) });
+		const { playerId, leave } = await enterGame(gameId, {
+			watch,
+			onState: next => {
+				if (next.caught?.some(({ playerId: who }) => who === playerId)) this.sound.play('catch');
+				view = next;
+				this.draw(view);
+			},
+			// Not in this game (or it's gone): the start screen sorts it out
+			notMember: () => (window.location.href = '#/'),
+			gone: () => (window.location.href = '#/'),
 		});
-		board.append(scores);
 
-		const draw = ({ players, state }) => {
-			scores.empty();
-			// Only who's here: someone who closed the page has left the table, until they're back
-			for (const player of players.filter(({ online }) => online !== false))
-				new Score({
-					appendTo: scores,
-					addClass: player.id === playerId ? 'me' : '',
-					textContent: `${player.name} ${state.taps[player.id] ?? 0}`,
-				});
+		this.stage = stage;
+		this.playerId = playerId;
+		this.addCleanup('game', () => {
+			leave();
+			this.sound.destroy();
+		});
+		if (!watch && playerId) this.controls(stage);
+	}
+
+	// Steering: held keys on a computer, a finger (or the mouse) held down toward where to go; sent only when it changes
+	controls(stage) {
+		let sent = '';
+		let toward = null;
+		const input = createInput();
+		const send = heading => {
+			const said = `${heading.x.toFixed(2)},${heading.y.toFixed(2)}`;
+
+			if (said === sent) return;
+			sent = said;
+			act('steer', heading, { quiet: true });
 		};
 
-		draw(game);
-		this.addCleanup(
-			'socket',
-			onMessage(message => message.gameId === gameId && message.update === 'state' && draw(message)),
+		input.pointer(stage.elem, {
+			onDown: point => (toward = point),
+			onMove: point => toward && (toward = point),
+			onUp: () => (toward = null),
+		});
+		input.every(50, () => {
+			const keys = input.direction();
+
+			if (keys.x || keys.y || !toward) return send(keys);
+
+			// Toward the finger, from where this player is now, in field units
+			const me = this.view?.state.spots[this.playerId];
+			const scale = this.scale();
+
+			if (!me || !scale) return;
+
+			const dx = toward.x / scale.factor - scale.left / scale.factor - me.x;
+			const dy = toward.y / scale.factor - scale.top / scale.factor - me.y;
+			const length = Math.hypot(dx, dy);
+
+			send(length < 2 ? { x: 0, y: 0 } : { x: dx / length, y: dy / length });
+		});
+		this.addCleanup('input', () => input.destroy());
+		if (isTouch()) this.stage.elem.title = 'Hold a finger where you want to go';
+	}
+
+	// How the field fits the stage: as big as it can, centered
+	scale() {
+		const { width, height } = this.stage ?? {};
+
+		if (!width || !height) return null;
+
+		const factor = Math.min(width / FIELD.width, height / FIELD.height);
+
+		return { factor, left: (width - FIELD.width * factor) / 2, top: (height - FIELD.height * factor) / 2 };
+	}
+
+	draw(view) {
+		this.view = view;
+
+		const { context } = this.stage ?? {};
+		const scale = this.scale();
+
+		if (!context || !scale) return;
+
+		const { factor, left, top } = scale;
+		const here = view.players.filter(({ online }) => online !== false);
+
+		context.clearRect(0, 0, this.stage.width, this.stage.height);
+		context.fillStyle = 'rgba(255, 255, 255, 0.05)';
+		context.fillRect(left, top, FIELD.width * factor, FIELD.height * factor);
+		// Emoji draw in the fill color's opacity: a solid one for the pieces
+		context.fillStyle = '#ffffff';
+		context.textAlign = 'center';
+		context.textBaseline = 'middle';
+		context.font = `${Math.max(16, 7 * factor)}px sans-serif`;
+		for (const star of view.state.stars) context.fillText('⭐', left + star.x * factor, top + star.y * factor);
+		for (const player of here) {
+			const spot = view.state.spots[player.id];
+
+			if (spot) context.fillText(player.name, left + spot.x * factor, top + spot.y * factor);
+		}
+
+		this.scores.elem.replaceChildren(
+			...here.map(player => {
+				const score = document.createElement('span');
+
+				score.textContent = `${player.name} ${view.state.scores[player.id] ?? 0}`;
+				if (player.id === this.playerId) score.className = 'me';
+
+				return score;
+			}),
 		);
+	}
+
+	// A code a phone on the same network opens to join
+	invite() {
+		new Dialog({
+			appendTo: document.body,
+			size: 'fit',
+			header: '➕👫',
+			body: new JoinCard({ gameId: this.options.gameId }),
+			buttons: ['✅'],
+			onButtonPress: ({ closeDialog }) => closeDialog(),
+		});
 	}
 }
