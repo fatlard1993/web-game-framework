@@ -117,9 +117,9 @@ export default class Start extends View {
 	}
 }
 
-// The one game everyone plays, or null until someone presses play
+// The one game everyone plays, or null until someone presses play: never some other game that happens to be listed
 const everyonesGame = async () => {
 	const { body } = await getGames({ invalidateAfter: 0 });
 
-	return body?.find(game => game.name === GAME_NAME) ?? body?.[0] ?? null;
+	return body?.find(game => game.name === GAME_NAME) ?? null;
 };
