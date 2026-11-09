@@ -132,13 +132,7 @@ export default function basicGameRoutes(options = {}) {
 				return Response.json({ message: 'Game not found' }, { status: 404 });
 			}
 
-			if (server.database) {
-				server.database.collections.games.delete({ id: match.gameId });
-			}
-
-			delete server.games[match.gameId];
-
-			server.socketBroadcast({ update: 'removedGame', gameId: match.gameId });
+			server.removeGame(match.gameId);
 			logger.info('Game deleted', { gameId: match.gameId });
 
 			return new Response(null, { status: 204 });

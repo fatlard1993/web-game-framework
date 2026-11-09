@@ -35,23 +35,23 @@ describe('Server database option', () => {
 
 	test('accepts a Database instance', () => {
 		const database = new Database({ filePath, logger: quietLogger });
-		server = new Server({ port: 0, database, logger: quietLogger });
+		server = new Server({ port: 0, exit: false, database, logger: quietLogger });
 
 		expect(server.database).toBe(database);
 	});
 
 	test('accepts a file path string and constructs a Database from it', () => {
-		server = new Server({ port: 0, database: filePath, logger: quietLogger });
+		server = new Server({ port: 0, exit: false, database: filePath, logger: quietLogger });
 
 		expect(server.database).toBeInstanceOf(Database);
 		expect(server.database.options.filePath).toBe(filePath);
 	});
 
 	test('throws on a database option that is neither instance nor string', () => {
-		expect(() => new Server({ port: 0, database: 42, logger: quietLogger })).toThrow(
+		expect(() => new Server({ port: 0, exit: false, database: 42, logger: quietLogger })).toThrow(
 			'Database instance or a file path',
 		);
-		expect(() => new Server({ port: 0, database: { filePath }, logger: quietLogger })).toThrow(
+		expect(() => new Server({ port: 0, exit: false, database: { filePath }, logger: quietLogger })).toThrow(
 			'Database instance or a file path',
 		);
 	});
@@ -282,7 +282,7 @@ describe('Server games that fail to construct', () => {
 
 	test('a failed create leaves nothing registered and saves nothing', async () => {
 		const database = new Database({ filePath, logger: quietLogger });
-		server = new Server({ port: 0, database, Game: FragileGame, logger: quietLogger });
+		server = new Server({ port: 0, exit: false, database, Game: FragileGame, logger: quietLogger });
 		await ready(database);
 
 		expect(() => server.createGame({ name: 'broken', fail: true })).toThrow('world generation failed');
@@ -294,7 +294,7 @@ describe('Server games that fail to construct', () => {
 
 	test('a successful create is registered and saved', async () => {
 		const database = new Database({ filePath, logger: quietLogger });
-		server = new Server({ port: 0, database, Game: FragileGame, logger: quietLogger });
+		server = new Server({ port: 0, exit: false, database, Game: FragileGame, logger: quietLogger });
 		await ready(database);
 
 		const game = server.createGame({ name: 'fine' });
@@ -313,7 +313,7 @@ describe('Server games that fail to construct', () => {
 		const warnings = [];
 		const logger = { ...quietLogger, warning: (message, data) => warnings.push({ message, data }) };
 		const database = new Database({ filePath, logger: quietLogger });
-		server = await new Server({ port: 0, database, Game: FragileGame, logger }).ready;
+		server = await new Server({ port: 0, exit: false, database, Game: FragileGame, logger }).ready;
 		await ready(database);
 
 		expect(Object.keys(server.games)).toEqual(['good']);

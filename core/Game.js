@@ -1,5 +1,3 @@
-import { debounce } from '@vanilla-bean/components/utils';
-
 import { simpleId } from '../utils/identifiers.js';
 
 import Players from './Players.js';
@@ -19,6 +17,7 @@ import consoleLogger from './consoleLogger.js';
  * - onPlayerAdded(player) - Called after player is added
  * - onPlayerRemoved(playerId) - Called after player is removed
  * - onPresence(playerId, online) - Called when a player's page opens on the game or the last one closes
+ * - onDispose() - Called when the game is removed, after its loops (every) have stopped
  * @example
  * ```js
  * class MyGame extends Game {
@@ -37,6 +36,9 @@ import consoleLogger from './consoleLogger.js';
  * ```
  */
 export default class Game {
+	/** The longest a change waits to be saved */
+	static SAVE_WITHIN_MS = 2000;
+
 	/**
 	 * @param {object} options - Game configuration
 	 * @param {object} [options.saveState] - Previous game state to restore
@@ -67,16 +69,23 @@ export default class Game {
 			emitFn: (event, data) => this.broadcast(event, data),
 		});
 
-		// Setup auto-save (debounced to prevent excessive writes)
+		// Saving: soon after a change, and no later than SAVE_WITHIN_MS after the first one however busy the game (a debounce
+		// would wait for a quiet moment that a game broadcasting every tick never has); saveNow writes at once, for the
+		// Server's flush on the way out
 		if (server?.database) {
-			this.save = debounce(() => {
-				server.database.collections.games.set({
-					id: this.id,
-					data: this.toSaveState(),
-				});
-			}, 5000);
+			this.save = () => {
+				if (this._saveTimer) return;
+				this._saveTimer = setTimeout(() => this.saveNow(), Game.SAVE_WITHIN_MS);
+				this._saveTimer.unref?.();
+			};
+			this.saveNow = () => {
+				clearTimeout(this._saveTimer);
+				this._saveTimer = null;
+				server.database.collections.games.set({ id: this.id, data: this.toSaveState() });
+			};
 		} else {
 			this.save = () => {}; // No-op if no database
+			this.saveNow = () => {};
 		}
 
 		// Restore players from save state
@@ -232,6 +241,42 @@ export default class Game {
 		this.broadcast('addPlayer', { newPlayer: player });
 
 		return player;
+	}
+
+	/**
+	 * Runs `tick` every `ms` for as long as the game exists: stopped when it's removed (dispose), so a deleted game's loop
+	 * doesn't run on. An error in one tick is logged and the loop carries on.
+	 * @param {number} ms - How often
+	 * @param {Function} tick - What runs
+	 * @returns {object} The timer, for stopping it sooner with clearInterval
+	 */
+	every(ms, tick) {
+		const timer = setInterval(() => {
+			try {
+				tick();
+			} catch (error) {
+				this.logger.error('A game loop failed', { gameId: this.id, error: error.stack ?? error.message });
+			}
+		}, ms);
+
+		timer.unref?.();
+		(this._loops ??= new Set()).add(timer);
+
+		return timer;
+	}
+
+	/**
+	 * The game is going away (deleted, or replaced): its loops stop and a save still pending is dropped, so it can't
+	 * write the game back after it's gone. Calls the onDispose() hook, for anything else the game started.
+	 */
+	dispose() {
+		for (const timer of this._loops ?? []) clearInterval(timer);
+		this._loops?.clear();
+		clearTimeout(this._saveTimer);
+		this._saveTimer = null;
+		this.save = () => {};
+
+		if (typeof this.onDispose === 'function') this.onDispose();
 	}
 
 	/**

@@ -1,4 +1,4 @@
-import { devConsole, serve } from '@vanilla-bean/components/app';
+import { devConsole, handleExit, serve } from '@vanilla-bean/components/app';
 
 import { simpleId } from '../utils/identifiers.js';
 
@@ -42,6 +42,7 @@ export default class Server {
 	 * @param {string} [options.wsPath] - WebSocket upgrade path
 	 * @param {Function} [options.Game] - Game class to instantiate
 	 * @param {object|string} [options.database] - Database instance, or a file path to create one from
+	 * @param {boolean} [options.exit] - Install the exit handler that saves what's pending first (default true)
 	 * @param {object} [options.logger] - Optional logger with info, warning, error and debug
 	 * @param {number} [options.verbosity] - Log verbosity level (0-3)
 	 * @param {object} [options.build] - Client build options for development's watch (buildClient's; its defaults if
@@ -68,6 +69,7 @@ export default class Server {
 		devConsole: commands,
 		status,
 		websocket,
+		exit = true,
 	}) {
 		this.clients = {};
 		this.games = {};
@@ -84,6 +86,22 @@ export default class Server {
 		}
 
 		this.database = database;
+
+		// The saved games, loaded as soon as the database is read: a request about games waits for it (gamesLoaded), so
+		// nothing is told a game is missing in the moment before it comes back
+		this.gamesLoaded =
+			database && Game
+				? new Promise(resolve =>
+						database.onReady(() => {
+							this._loadSavedGames();
+							resolve();
+						}),
+					)
+				: Promise.resolve();
+
+		// On the way out (stopped, or a crash), what's waiting to be saved is written first; `exit: false` leaves the
+		// process's ending to whoever runs it (a test)
+		if (database && exit) handleExit({ flush: () => this.flush() });
 
 		if (!database) this.logger.info('No database configured - games will not persist across restarts');
 
@@ -163,8 +181,6 @@ export default class Server {
 		}).then(httpServer => {
 			this.httpServer = httpServer;
 
-			if (database && Game) database.onReady(() => this._loadSavedGames());
-
 			return this;
 		});
 
@@ -242,6 +258,33 @@ export default class Server {
 		}
 
 		this.logger.info(`Loaded ${loaded} of ${savedGames.length} games from database`);
+	}
+
+	/**
+	 * Remove a game: it stops (its loops, a save still pending), its record goes from the database, and every page hears
+	 * `removedGame`
+	 * @param {string} id - Game ID
+	 * @returns {boolean} Whether there was such a game
+	 */
+	removeGame(id) {
+		const game = this.games[id];
+
+		if (!game) return false;
+		game.dispose?.();
+		delete this.games[id];
+		this.database?.collections.games?.delete({ id });
+		this.socketBroadcast({ update: 'removedGame', gameId: id });
+
+		return true;
+	}
+
+	/**
+	 * Every game's pending save written now, and the database with it: for the way out
+	 * @returns {Promise<void>}
+	 */
+	async flush() {
+		for (const game of Object.values(this.games)) game.saveNow?.();
+		await this.database?.write();
 	}
 
 	/**
@@ -367,7 +410,7 @@ export default class Server {
 
 			if (pathname === STATUS_PATH && request.method === 'GET') return Response.json(this.statusReport());
 
-			return customRouter?.(this)(request, httpServer);
+			return this.gamesLoaded.then(() => customRouter?.(this)(request, httpServer));
 		};
 	}
 }
