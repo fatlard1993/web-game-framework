@@ -12,7 +12,10 @@ A lightweight, batteries-included framework for building multiplayer web games w
 - **WebSocket-based multiplayer** - Real-time communication out of the box
 - **Opt-in modules** - Use `Server` alone, or add `Game`, `Database`, `EventRouter` and the lobby UI as you need them
 - **Optional persistence** - Built-in save/load with JSON file database
-- **Hot reload development** - Pages reload after each build, with `hotReload` from `@vanilla-bean/components/app`
+- **Actions and views** - Players act through the socket as the player their page belongs to; each page is sent its own view of its game
+- **Presence** - The server knows which players have a page open, and hears when the last one closes
+- **Kits** - Input across keyboard, touch and pointer; sound and music; a stage that fills the screen; a join card a phone can scan
+- **Development reloads** - Pages reload after each build, with `hotReload` from `@vanilla-bean/components/app`
 - **Reference UI components** - Lobby components you copy and customize
 - **Battle-tested** - Powers void-driller, sorcery-and-savagery, and humanity games
 
@@ -57,7 +60,7 @@ import '@fatlard1993/web-game-framework/utils/exit'; // exit handling for the se
 
 ### A whole game, from the scaffold
 
-`scaffold/` is a small playable game: a server with the framework's routes and save file, a `Game` whose state is broadcast on every change, and a page with the framework's lobby and a `Play` view that sends taps and draws everyone's count. `new-game` copies it, named after its folder, with the dependencies filled in:
+`scaffold/` is a small real-time game, catch the stars, written the way a game on the framework should be: its rules in one file shared by server and page, a `Game` with a loop, actions and versioned saves, a `Play` view that opens the game with `enterGame`, draws on a full-screen `Stage`, steers with `createInput` and plays `createSound`, a watch view, a join card, and a test. `new-game` copies it, named after its folder, with the dependencies filled in:
 
 ```bash
 bun bin/new-game.js ~/Projects/moon-game   # from a checkout; `bun new-game` where the framework is installed
@@ -84,29 +87,25 @@ That's it! WebSocket connections are handled automatically.
 Add game state management and player tracking:
 
 ```js
-import { Server, Game } from '@fatlard1993/web-game-framework';
+import { Server, Game, refuse } from '@fatlard1993/web-game-framework';
 
 class MyGame extends Game {
 	constructor(options) {
 		super(options);
-		this.score = 0;
-
-		// Setup event handlers
-		this.events.on('player:action', data => {
-			this.incrementScore();
-		});
+		this.state = options.saveState?.state ?? { score: 0 };
 	}
 
-	toClient() {
-		return {
-			...super.toClient(),
-			score: this.score,
-		};
-	}
+	// What a player can do: act('score', { by: 1 }) from their page runs this as that page's player, then every page
+	// in the game is sent its view (viewFor). refuse('why') turns an action down; the page is told why.
+	actions = {
+		score(player, { by = 1 } = {}) {
+			if (!Number.isInteger(by) || by < 1) refuse('Score a whole number');
+			this.state.score += by;
+		},
+	};
 
-	incrementScore() {
-		this.score++;
-		this.broadcast('scoreUpdated', { score: this.score });
+	toSaveState() {
+		return { ...super.toSaveState(), state: this.state };
 	}
 }
 
@@ -115,6 +114,23 @@ const server = new Server({
 	Game: MyGame,
 });
 ```
+
+### The client side: enterGame and act
+
+A Play view opens its game with `enterGame` and sends what the player does with `act`:
+
+```js
+import { act, enterGame } from '@fatlard1993/web-game-framework/client';
+
+const { leave } = await enterGame(gameId, {
+	onState: view => draw(view), // each view the server sends: on opening, and after every change
+	notMember: () => (window.location.hash = '#/'),
+});
+
+scoreButton.onclick = () => act('score', { by: 1 }); // resolves to { ok } or { ok: false, error }
+```
+
+`enterGame` tells the server which game the page is on and as which player (with the secret joining kept in this browser), so the player shows as here; it gets the page's view at once and again whenever the game publishes, and says where it is again after a lost connection. `{ watch: true }` opens it to watch. A game overrides `viewFor(playerId)` to show each player only what they should see, and calls `publish()` after a change its loop makes (actions publish by themselves). `every(ms, tick)` is a game's loop, stopped when the game is removed; `onPresence(id, online)` hears a player's page open or close; `static version` with `migrations` brings old saves up to date, and `static transient` names state that's never saved.
 
 ### With Database Persistence
 
@@ -233,7 +249,7 @@ See [EventRouter.js](./core/EventRouter.js) source for full API.
 
 | Module | Purpose | Key Features |
 | --- | --- | --- |
-| **[Server](./core/Server.js)** | WebSocket server with Bun | Client tracking, broadcasting, hot reload sockets, health |
+| **[Server](./core/Server.js)** | WebSocket server with Bun | Client tracking, presence, actions, per-game views, saving on exit, health |
 | **[Game](./core/Game.js)** | Base game state management | Player management, save/load, broadcasting hooks |
 | **[EventRouter](./core/EventRouter.js)** | Event-based message routing | Validation, middleware, wildcards, throttling |
 | **[Database](./core/Database.js)** | JSON file persistence | Collection-based CRUD, async init, auto-save |

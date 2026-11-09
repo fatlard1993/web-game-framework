@@ -70,37 +70,41 @@ const server = new Server({
 
 ## Adding Game State
 
-Create a Game class with event handlers (`MyGame.js`):
+A game's state, what players can do with it, and what each page is shown (`MyGame.js`):
 
 ```js
-import { Game } from '@fatlard1993/web-game-framework';
+import { Game, refuse } from '@fatlard1993/web-game-framework';
 
 export default class MyGame extends Game {
+	// Raise it when `state` changes shape, with a migration to bring old saves up to date
+	static version = 1;
+	static migrations = {};
+
 	constructor(options) {
 		super(options);
-		this.score = 0;
-
-		// Setup EventRouter handlers
-		this.events.on('player:incrementScore', data => {
-			this.incrementScore(data.points || 1);
-		});
+		this.state = options.saveState?.state ?? { score: 0, round: 1 };
 	}
 
-	toClient() {
-		return {
-			...super.toClient(),
-			score: this.score,
-		};
+	// act('addPoints', { points: 2 }) from a player's page runs this as that page's player; every page in the game is
+	// sent its view after. refuse() turns an action down, and the page is told why.
+	actions = {
+		addPoints(player, { points = 1 } = {}) {
+			if (!Number.isInteger(points) || points < 1) refuse('Points are whole numbers');
+			this.state.score += points;
+			this.state.lastScorer = player.name;
+		},
+		nextRound() {
+			this.state.round += 1;
+		},
+	};
+
+	// What each page is sent: everything here; per player for a game with secrets
+	viewFor(playerId) {
+		return { state: this.state, players: this.toClient().players, me: playerId };
 	}
 
-	incrementScore(points = 1) {
-		this.score += points;
-		this.broadcast('scoreUpdated', { score: this.score });
-	}
-
-	onPlayerAdded(player) {
-		console.log(`${player.name} joined game ${this.id}`);
-		this.broadcast('playerJoined', { player });
+	toSaveState() {
+		return { ...super.toSaveState(), state: this.state };
 	}
 }
 ```
@@ -108,55 +112,50 @@ export default class MyGame extends Game {
 Update `server.js`:
 
 ```js
-import { Server } from '@fatlard1993/web-game-framework';
+import { Server, basicGameRoutes } from '@fatlard1993/web-game-framework';
 import MyGame from './MyGame.js';
 
-const server = new Server({
-	port: 3000,
+const routes = basicGameRoutes();
+
+new Server({
+	port: 'auto', // PORT, else the port this game had last, else 3000, else any free one
 	Game: MyGame,
+	database: './data/games.json',
+	router: server => request => routes(request, server),
+	static: true, // the built page for whatever the routes leave
 });
 ```
 
 **What's Happening:**
 
-- `Game` provides player management and broadcasting
-- `this.events` (EventRouter) handles game actions
-- `broadcast()` sends updates to all clients and triggers auto-save
-- Lifecycle hooks handle player join/leave events
+- `actions` are what players can do; each runs as the player whose page sent it, never one a message claims
+- After an action the game publishes: every page open on it is sent `viewFor(its player)`, and pages on other games nothing
+- A game that changes on its own (a loop: `this.every(50, () => this.tick())`) calls `this.publish()` after a change
+- Saves land within two seconds of a change and on the way out; `version` and `migrations` keep old saves loading
 
 ## Client-Side Connection
 
-**Recommended: Use EventRouter** for clean event handling (`client.js`):
+The page opens the game and acts in it (`client.js`):
 
 ```js
-import { createClientEventRouter } from '@fatlard1993/web-game-framework/client';
+import { act, createGame, enterGame, joinGame } from '@fatlard1993/web-game-framework/client';
 
-const router = createClientEventRouter({ gameId: 'abc123' });
+// Make a game and join it (joining keeps this player's secret in the browser)
+const { body: game } = await createGame({ body: { name: 'Everyone' } });
+const { body: me } = await joinGame(game.id, { body: { name: 'Ada' } });
 
-// Handle game events
-router.on('scoreUpdated', data => {
-	document.getElementById('score').textContent = data.score;
-	document.getElementById('round').textContent = data.round;
+localStorage.setItem(game.id, me.id);
+
+const { leave } = await enterGame(game.id, {
+	onState: view => {
+		document.getElementById('score').textContent = view.state.score;
+		document.getElementById('round').textContent = view.state.round;
+	},
 });
 
-router.on('roundStarted', data => {
-	console.log(`Round ${data.round} started!`);
-	document.getElementById('status').textContent = 'playing';
-});
-
-router.on('roundEnded', data => {
-	console.log(`Final score: ${data.finalScore}`);
-	document.getElementById('status').textContent = 'finished';
-});
-
-router.on('playerJoined', data => {
-	console.log(`${data.player.name} joined`);
-});
-
-// Cleanup when leaving
-window.addEventListener('beforeunload', () => {
-	router.destroy();
-});
+document.getElementById('add-points').onclick = () => act('addPoints', { points: 1 });
+document.getElementById('next-round').onclick = () => act('nextRound');
+window.addEventListener('beforeunload', leave);
 ```
 
 Create a simple HTML file (`index.html`):
@@ -172,28 +171,22 @@ Create a simple HTML file (`index.html`):
 	</head>
 	<body>
 		<h1>My Multiplayer Game</h1>
-		<div id="game-info">
-			<p>Score: <span id="score">0</span></p>
-			<p>Round: <span id="round">1</span></p>
-			<p>Status: <span id="status">waiting</span></p>
-		</div>
-		<button id="start-round">Start Round</button>
+		<p>Score: <span id="score">0</span> Round: <span id="round">1</span></p>
 		<button id="add-points">Add Points</button>
-		<button id="end-round">End Round</button>
+		<button id="next-round">Next Round</button>
 	</body>
 </html>
 ```
 
 **What's Happening:**
 
-- `createClientEventRouter()` sets up WebSocket listener with auto-reconnection
-- `router.on()` registers clean, declarative event handlers
-- EventRouter handles validation and reconnection automatically
-- `router.destroy()` cleans up all listeners
+- `enterGame` tells the server which game and player this page is (so the player shows as here), and calls `onState` with each view the server sends, after a lost connection too
+- `act` sends an action and resolves to `{ ok }` or `{ ok: false, error }`, showing a refusal as a notice
+- For a game with controls, `createInput` (keys, touch, pointer), `createSound` (effects and music), and the `Stage` and `JoinCard` from the UI save writing your own: see the scaffold's `client/Play.js`
 
 ## EventRouter Features
 
-The EventRouter (used above) provides additional features for complex games:
+For a game's own broadcasts beyond its views, the EventRouter (`this.events` on a Game, `createClientEventRouter` on a page) routes them with validation, throttling and middleware:
 
 **Validation:**
 
