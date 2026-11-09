@@ -1,10 +1,9 @@
-import { Button, Component, styled } from '@vanilla-bean/components';
+import { Button, Component, Notify, styled } from '@vanilla-bean/components';
 import { createGame, getGames, joinGame } from '@fatlard1993/web-game-framework/client';
 import { View } from '@fatlard1993/web-game-framework/ui';
 
-// The first screen, for players who may not read yet: pick who you are (an animal), press play. There is one game
-// for everyone on this server, made the first time someone plays; grown-ups and phones can still use the lobby at
-// #/hub to make more or watch.
+// The first screen, in pictures so anyone can play it: pick who you are (an animal), press play. There is one game for
+// everyone on this server, made the first time someone plays; the lobby at #/hub makes more, or watches one.
 const AVATARS = ['🦊', '🐸', '🐼', '🦄', '🐙', '🐯', '🐧', '🐝'];
 const GAME_NAME = 'Everyone';
 
@@ -105,13 +104,19 @@ export default class Start extends View {
 			textContent: '▶️ Play',
 			appendTo: screen,
 			onPointerPress: async () => {
-				const found = game ?? (await createGame({ body: { name: GAME_NAME } })).body;
-				const joined = await joinGame(found.id, { body: { name: picked } });
+				try {
+					const found = game ?? (await createGame({ body: { name: GAME_NAME } })).body;
+					const joined = await joinGame(found.id, { body: { name: picked } });
 
-				if (!joined.body?.id) return;
-				localStorage.setItem(found.id, joined.body.id);
-				localStorage.setItem('avatar', picked);
-				window.location.href = `#/play/${found.id}`;
+					if (!joined.body?.id) throw new Error(`could not join: ${JSON.stringify(joined.body)}`);
+					localStorage.setItem(found.id, joined.body.id);
+					localStorage.setItem('avatar', picked);
+					window.location.href = `#/play/${found.id}`;
+				} catch (error) {
+					// Said where it happened, in a picture and two words, and kept for whoever looks at the console
+					console.error('Could not start playing', error);
+					new Notify({ x: window.innerWidth / 2, y: 120, intent: 'warning', content: '😕 Try again', timeout: 3000 });
+				}
 			},
 		});
 	}
