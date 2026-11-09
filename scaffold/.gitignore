@@ -1,3 +1,8 @@
 node_modules
 client/build
 data
+
+# paude's files for a game made in its arcade, written again each time Claude starts there
+.claude/
+CLAUDE.local.md
+.paude-arcade.md

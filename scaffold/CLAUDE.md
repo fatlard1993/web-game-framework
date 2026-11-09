@@ -33,3 +33,15 @@ The players may be young and may not read yet. Every control is a picture (an em
 - The truth of a game lives in its `Game` on the server. A page never changes what it shows on its own; it sends a message and draws what comes back, so every player sees the same thing.
 - One file per view, each small. New kinds of thing a player can do are new `type`s in `receive` and new state in `state`, with `Play` drawing them.
 - A change that can be seen is checked by looking: the page reloads itself on every save.
+
+## What makes it feel good
+
+What players asked for over and over in the first games built this way, so start there rather than waiting to be told:
+
+- The game takes the whole screen. The play area grows to fill everything below the top bar (the `Board` does); the score, level and buttons that aren't part of playing live in the top bar, and the tools a player plays with sit right beside the play area.
+- A press or drag that starts just outside the play area still counts, held to its edge: fingers miss.
+- On a computer, the keyboard plays it (arrow keys and WASD to move, space for the main action) and the mouse aims; on-screen touch controls show only on touch devices (`matchMedia('(pointer: coarse)')`).
+- Everything that acts on the game is seen acting: wind blows visibly, a current flows, a timer drains. A force a player can't see is a rule they can't learn.
+- A player whose page closed is gone from the table (`online` is false on them, and `onPresence` hears it): take their ship out of space, their hand off the board, until they're back.
+- Saved games (`data/games.json`) outlive changes to the game: when `state` changes shape, a game saved the old way still loads (fill in what's new, carry over what moved).
+- The README says what the game is and how to play it, its rules as they are now: when a rule changes, so does the README.

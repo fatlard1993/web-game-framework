@@ -21,9 +21,10 @@ export default class Game extends BaseGame {
 		return { ...super.toSaveState(), state: this.state };
 	}
 
-	// The whole picture to every page: the state and who's playing
+	// The whole picture to every page: the state and who's playing, each with whether they're here (a page open on the
+	// game) or have left (their place and taps kept for when they're back)
 	announce() {
-		this.broadcast('state', { state: this.state, players: [...this.players.values()] });
+		this.broadcast('state', { state: this.state, players: super.toClient().players });
 	}
 
 	// Something a player did, from their page: { gameId, playerId, type, ...whatever the type carries }
@@ -36,6 +37,11 @@ export default class Game extends BaseGame {
 	}
 
 	onPlayerAdded() {
+		this.announce();
+	}
+
+	// A player's page opened, or their last one closed
+	onPresence() {
 		this.announce();
 	}
 

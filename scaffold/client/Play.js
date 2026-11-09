@@ -2,12 +2,16 @@ import { Button, Component, Link, styled } from '@vanilla-bean/components';
 import { gameContext, getGame, onMessage, socket } from '@fatlard1993/web-game-framework/client';
 import { View } from '@fatlard1993/web-game-framework/ui';
 
+// The whole screen below the bar is the game's: it grows to fill it, so whatever the game becomes has all the room
 const Board = styled(
 	Component,
 	({ space }) => `
+		flex: 1;
+		min-height: 0;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
+		justify-content: center;
 		gap: ${space.xl};
 		padding: ${space.xl};
 	`,
@@ -103,7 +107,8 @@ export default class Play extends View {
 
 		const draw = ({ players, state }) => {
 			scores.empty();
-			for (const player of players)
+			// Only who's here: someone who closed the page has left the table, until they're back
+			for (const player of players.filter(({ online }) => online !== false))
 				new Score({
 					appendTo: scores,
 					addClass: player.id === playerId ? 'me' : '',
