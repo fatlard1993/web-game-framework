@@ -216,6 +216,54 @@ class FragileGame extends Game {
 	}
 }
 
+describe('Server status', () => {
+	let DomResponse;
+
+	beforeAll(async () => {
+		DomResponse = globalThis.Response;
+		globalThis.Response = (await Bun.fetch('data:,')).constructor;
+	});
+
+	afterAll(() => (globalThis.Response = DomResponse));
+
+	const status = async options => {
+		const server = await new Server({ port: 0, Game, logger: quietLogger, ...options }).ready;
+
+		try {
+			server.createGame({ name: 'one' }).addPlayer('Ada');
+			server.createGame({ name: 'two' }).addPlayer('Bo');
+			server.games[Object.keys(server.games)[1]].addPlayer('Cy');
+
+			return await (await Bun.fetch(new URL('/.well-known/web-game', server.url))).json();
+		} finally {
+			server.httpServer.stop(true);
+		}
+	};
+
+	test('says how many games are going and the players in them, never who', async () => {
+		const report = await status();
+
+		expect(report).toMatchObject({ connections: 0, games: 2, players: 3, metrics: [] });
+		expect(report.uptime).toBeGreaterThanOrEqual(0);
+		expect(report.memory).toBeGreaterThan(0);
+		expect(JSON.stringify(report)).not.toContain('Ada');
+	});
+
+	test("adds the game's own numbers, and a status option that throws costs only those", async () => {
+		expect((await status({ status: () => [{ label: 'deepest dig', value: 42 }] })).metrics).toEqual([
+			{ label: 'deepest dig', value: 42 },
+		]);
+
+		const report = await status({
+			status: () => {
+				throw new Error('oops');
+			},
+		});
+
+		expect(report).toMatchObject({ games: 2, metrics: [] });
+	});
+});
+
 describe('Server games that fail to construct', () => {
 	let server;
 	let filePath;

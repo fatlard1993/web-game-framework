@@ -269,6 +269,7 @@ const server = new Server({
 	devConsole: (command, server) => {
 		/* a line typed into the dev terminal that isn't b or stop */
 	},
+	status: server => [{ label: 'deepest dig', value: deepest(server) }], // Optional, the game's own numbers
 });
 
 await server.ready; // Listening (and in development, the client built); rejects "Port 3000 is already in use"
@@ -283,6 +284,21 @@ The Server runs on `serve` from `@vanilla-bean/components/app`, so a game wires 
 - A router that throws gets an answer instead of a dropped request (`withErrors`): an error with a 4xx `status` answers `{ error: message }` with it, anything else a 500; a path the router leaves gets a 404
 - In development (`NODE_ENV=development`), builds the client, rebuilds it when a file it was built from changes, and reloads the pages that loaded `@vanilla-bean/components/app/reloadOnBuild`
 - In development, the terminal takes `b` (rebuild and reload) and `stop`; any other line goes to the `devConsole` option with the Server (`devConsole` from the kit)
+
+**Status:** every game answers `GET /.well-known/web-game` with how it's doing, for whatever watches it ([web-game-mother-hub](https://github.com/fatlard1993/web-game-mother-hub) shows it on the game's card):
+
+```json
+{
+	"connections": 3,
+	"games": 2,
+	"players": 5,
+	"uptime": 5400,
+	"memory": 52428800,
+	"metrics": [{ "label": "deepest dig", "value": 42 }]
+}
+```
+
+`connections` is the pages with the game socket open, `games` and `players` what's in `server.games`, `uptime` in seconds and `memory` (rss) in bytes. `metrics` is whatever the `status` option returns: a few numbers worth seeing at a glance, each `{ label, value }`. It's counts only, never names, since an exposed game answers it to anyone; a `status` that throws leaves `metrics` empty and logs a warning.
 
 `server.port`, `server.url` and `server.hostname` come from the listening server: `port` is the one asked for until then, `url` and `hostname` are undefined. Saved games load once listening.
 

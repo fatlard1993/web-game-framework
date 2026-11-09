@@ -5,6 +5,9 @@ import { simpleId } from '../utils/identifiers.js';
 import consoleLogger from './consoleLogger.js';
 import Database from './Database.js';
 
+// Where every game says how it's doing, the same on each so one watcher reads them all
+export const STATUS_PATH = '/.well-known/web-game';
+
 /**
  * Minimal WebSocket server for multiplayer games, on the server kit's `serve` (from `@vanilla-bean/components/app`)
  *
@@ -42,6 +45,8 @@ export default class Server {
 	 *   omitted)
 	 * @param {Function} [options.devConsole] - (command, server) => anything, for a line typed into the dev server's
 	 *   terminal that isn't `b` or `stop`
+	 * @param {Function} [options.status] - (server) => [{ label, value }]: the game's own numbers worth watching from
+	 *   outside, added to what /.well-known/web-game says of every game
 	 * @param {object} [options.websocket] - Optional websocket handlers
 	 * @param {Function} [options.websocket.message] - Custom message handler (socket, message)
 	 * @param {Function} [options.websocket.open] - Custom open handler (socket)
@@ -58,6 +63,7 @@ export default class Server {
 		verbosity,
 		build,
 		devConsole: commands,
+		status,
 		websocket,
 	}) {
 		this.clients = {};
@@ -65,6 +71,7 @@ export default class Server {
 		this.Game = Game;
 		this.wsPath = wsPath;
 		this.requestedPort = port;
+		this.status = status;
 
 		this.logger = logger || consoleLogger({ verbosity });
 
@@ -246,6 +253,32 @@ export default class Server {
 	}
 
 	/**
+	 * How the game is doing, in numbers, for whatever watches it (web-game-mother-hub): who has it open, how many games
+	 * are going and the players in them, and anything the game adds through its `status` option. Counts only, never
+	 * names: an exposed game answers this to anyone.
+	 * @returns {object} The status
+	 */
+	statusReport() {
+		const games = Object.values(this.games).filter(Boolean);
+		let metrics = [];
+
+		try {
+			metrics = (this.status?.(this) ?? []).filter(metric => metric && metric.label !== undefined);
+		} catch (error) {
+			this.logger.warning('The status option threw', { error: error.message });
+		}
+
+		return {
+			connections: Object.keys(this.clients).length,
+			games: games.length,
+			players: games.reduce((total, game) => total + (game.players?.size ?? 0), 0),
+			uptime: Math.round(process.uptime()),
+			memory: process.memoryUsage().rss,
+			metrics,
+		};
+	}
+
+	/**
 	 * Start periodic health monitoring
 	 * Logs system stats every 5 minutes
 	 */
@@ -285,9 +318,13 @@ export default class Server {
 			// In development serve settles after the client's first build, and requests arrive before that
 			this.httpServer ??= httpServer;
 
-			if (new URL(request.url).pathname === this.wsPath) {
+			const { pathname } = new URL(request.url);
+
+			if (pathname === this.wsPath) {
 				if (httpServer.upgrade(request, { data: { clientId: simpleId() } })) return;
 			}
+
+			if (pathname === STATUS_PATH && request.method === 'GET') return Response.json(this.statusReport());
 
 			return customRouter?.(this)(request, httpServer);
 		};
