@@ -1,3 +1,6 @@
+import { mkdirSync } from 'fs';
+import { dirname } from 'path';
+
 import { Low } from 'lowdb';
 import { JSONFile } from 'lowdb/node';
 
@@ -32,6 +35,8 @@ export default class Database extends Low {
 	constructor(options) {
 		const { filePath, logger, onReady } = options;
 
+		// The save file's folder exists before anything is written to it
+		mkdirSync(dirname(filePath), { recursive: true });
 		super(new JSONFile(filePath), { games: {} });
 
 		this.options = options;

@@ -9,7 +9,6 @@ import { Component, styled } from '@vanilla-bean/components';
  * stage.context.fillRect(0, 0, stage.width, stage.height);
  * @param {object} [options] - Options
  * @param {Function} [options.onResize] - ({ width, height, ratio, context }) on first layout and each change, in CSS pixels
- * @param {boolean} [options.canvas] - Give it a canvas (default true)
  */
 export default class Stage extends styled(
 	Component,
@@ -31,7 +30,7 @@ export default class Stage extends styled(
 		}
 	`,
 ) {
-	static schema = { onResize: { data: true }, canvas: { default: true } };
+	static schema = { onResize: { data: true } };
 
 	build() {
 		super.build?.();
@@ -39,11 +38,9 @@ export default class Stage extends styled(
 		this.height = 0;
 		this.ratio = 1;
 
-		if (this.options.canvas) {
-			this.canvas = document.createElement('canvas');
-			this.context = this.canvas.getContext('2d');
-			this.elem.append(this.canvas);
-		}
+		this.canvas = document.createElement('canvas');
+		this.context = this.canvas.getContext('2d');
+		this.elem.append(this.canvas);
 
 		this.observer = new ResizeObserver(() => this.fit());
 		this.observer.observe(this.elem);
@@ -57,11 +54,9 @@ export default class Stage extends styled(
 
 		if (width === this.width && height === this.height && ratio === this.ratio) return;
 		Object.assign(this, { width, height, ratio });
-		if (this.canvas) {
-			this.canvas.width = Math.round(width * ratio);
-			this.canvas.height = Math.round(height * ratio);
-			this.context.setTransform(ratio, 0, 0, ratio, 0, 0);
-		}
+		this.canvas.width = Math.round(width * ratio);
+		this.canvas.height = Math.round(height * ratio);
+		this.context.setTransform(ratio, 0, 0, ratio, 0, 0);
 		this.options.onResize?.({ width, height, ratio, context: this.context });
 	}
 

@@ -3,3 +3,5 @@ registry = "https://registry.npmjs.org"
 
 [test]
 preload = ["./test-setup.js"]
+# The scaffold's test runs in a game made from it (new-game), where its imports resolve
+pathIgnorePatterns = ["scaffold/**"]
