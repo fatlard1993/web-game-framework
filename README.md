@@ -64,7 +64,7 @@ bun bin/new-game.js ~/Projects/moon-game   # from a checkout; `bun new-game` whe
 cd ~/Projects/moon-game && bun install && bun run dev
 ```
 
-The folder has to be empty or missing. `--framework <spec>` and `--vbc <spec>` set the dependency specs (a project that pins the framework to a commit passes its own, so the game pins the same); `--name` the package name. The copy has a `CLAUDE.md` saying where things are and where the libraries' docs live, so a Claude Code session in it starts oriented.
+The folder has to be empty or missing. `--framework <spec>` and `--vbc <spec>` set the dependency specs (a project that pins the framework to a commit passes its own, so the game pins the same); `--name` the package name. `--title`, `--description` and `--color` are the game's face: its page title, web manifest (`client/manifest.json`) and the opening of its README, which are what a browser, a phone's home screen and [web-game-mother-hub](https://github.com/fatlard1993/web-game-mother-hub)'s card show of it. Without a color, one is made from the name, the same one every time. The copy has a `CLAUDE.md` saying where things are and where the libraries' docs live, so a Claude Code session in it starts oriented.
 
 ### Minimal Server (~3 lines)
 

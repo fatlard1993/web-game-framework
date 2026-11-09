@@ -1,0 +1,10 @@
+{
+	"name": "{{title}}",
+	"short_name": "{{title}}",
+	"description": "{{description}}",
+	"display": "standalone",
+	"orientation": "any",
+	"start_url": ".",
+	"theme_color": "{{color}}",
+	"background_color": "#1b1b1b"
+}

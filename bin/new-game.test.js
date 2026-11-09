@@ -2,7 +2,7 @@ import { mkdtemp, readFile, readdir, rm, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
 
-import { newGame, packageName } from './new-game.js';
+import { colorFor, newGame, packageName } from './new-game.js';
 
 const made = [];
 const scratch = async () => {
@@ -49,6 +49,43 @@ describe('newGame', () => {
 
 		expect(name).toBe('moon-game');
 		expect(manifest.dependencies['@vanilla-bean/components']).toBe('^8.0.0');
+	});
+
+	test("writes the game's face: title, description and color in its page, manifest and README", async () => {
+		const folder = join(await scratch(), 'dino');
+
+		await newGame(folder, {
+			title: 'Dino "Dash" & Friends',
+			description: 'Run from the lava <fast>.',
+			color: '#c8622b',
+		});
+
+		const manifest = JSON.parse(await readFile(join(folder, 'client/manifest.json'), 'utf8'));
+		const page = await readFile(join(folder, 'client/index.html'), 'utf8');
+		const readme = await readFile(join(folder, 'README.md'), 'utf8');
+
+		expect(manifest).toMatchObject({
+			name: 'Dino "Dash" & Friends',
+			description: 'Run from the lava <fast>.',
+			theme_color: '#c8622b',
+		});
+		expect(page).toContain('<title>Dino &quot;Dash&quot; &amp; Friends</title>');
+		expect(page).toContain('<meta name="theme-color" content="#c8622b" />');
+		expect(page).toContain('<link rel="manifest" href="./manifest.json" />');
+		expect(readme.startsWith('# Dino "Dash" & Friends\n\nRun from the lava <fast>.\n')).toBe(true);
+	});
+
+	test('without a color, one steady color from the name; without a description, a plain one', async () => {
+		const folder = join(await scratch(), 'rocks');
+
+		await newGame(folder);
+
+		const manifest = JSON.parse(await readFile(join(folder, 'client/manifest.json'), 'utf8'));
+
+		expect(manifest.theme_color).toBe(colorFor('rocks'));
+		expect(manifest.theme_color).toMatch(/^#[0-9a-f]{6}$/);
+		expect(colorFor('rocks')).not.toBe(colorFor('dino'));
+		expect(manifest.description).toContain('multiplayer web game');
 	});
 
 	test('refuses a folder with anything in it', async () => {

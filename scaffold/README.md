@@ -1,6 +1,8 @@
-# {{name}}
+# {{title}}
 
-A multiplayer web game on [web-game-framework](https://github.com/fatlard1993/web-game-framework) and [@vanilla-bean/components](https://github.com/fatlard1993/vanilla-bean-components).
+{{description}}
+
+Built on [web-game-framework](https://github.com/fatlard1993/web-game-framework) and [@vanilla-bean/components](https://github.com/fatlard1993/vanilla-bean-components).
 
 ```sh
 bun install
