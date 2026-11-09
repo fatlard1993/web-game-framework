@@ -578,7 +578,7 @@ cd examples/clicker-game
 bun server.js
 
 # Development (with your game)
-bun --hot server.js   # Auto-restart on changes
+bun --watch server.js   # Restart on changes
 ```
 
 ### Project Structure

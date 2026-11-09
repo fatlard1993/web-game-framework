@@ -6,7 +6,7 @@ A multiplayer clicking competition demonstrating web-game-framework basics.
 
 ```bash
 cd examples/clicker-game
-NODE_ENV=development bun --hot server.js
+NODE_ENV=development bun --watch server.js
 ```
 
 Open http://localhost:3000 and click away. In development the Server builds the client and rebuilds it on a change, reloading the page; type `b` to rebuild or `stop` to quit. For production, `bun build.js` once, then `bun server.js`. `PORT` picks another port.

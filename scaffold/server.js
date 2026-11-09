@@ -1,4 +1,4 @@
-import { mkdirSync } from 'fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'fs';
 
 import { serveStatic } from '@vanilla-bean/components/app';
 import { Server, basicGameRoutes } from '@fatlard1993/web-game-framework';
@@ -13,22 +13,39 @@ const router = server => async request => (await routes(request, server)) ?? ser
 // The save file's folder has to exist before the database opens it
 mkdirSync('./data', { recursive: true });
 
-// 3000 when it's free, or else any free port, so two games can run side by side; PORT names one outright. Chosen once
-// per process: `bun --hot` runs this file again on each change, and the server keeps its port through that.
+// PORT names the port outright. Otherwise the one this game used last, kept in its data folder, or 3000, or any free
+// one, so two games can run side by side: `bun --watch` starts this file over on each change, and the page carries on
+// at the same address.
+const PORT_FILE = './data/port';
+
 const freePort = wanted => {
 	try {
-		Bun.serve({ port: wanted, fetch: () => new Response() }).stop(true);
+		const probe = Bun.serve({ port: wanted, fetch: () => new Response() });
+		const { port } = probe;
 
-		return wanted;
+		probe.stop(true);
+
+		return port;
 	} catch {
-		return 0;
+		return null;
 	}
 };
 
-globalThis.gamePort ??= Number(process.env.PORT) || freePort(3000);
+const lastPort = () => {
+	try {
+		return Number(readFileSync(PORT_FILE, 'utf8')) || null;
+	} catch {
+		return null;
+	}
+};
+
+const last = lastPort();
+const port = Number(process.env.PORT) || (last && freePort(last)) || freePort(3000) || freePort(0);
+
+if (!process.env.PORT) writeFileSync(PORT_FILE, String(port));
 
 const server = new Server({
-	port: globalThis.gamePort,
+	port,
 	Game,
 	database: './data/games.json',
 	router,
