@@ -83,17 +83,22 @@ export default function basicGameRoutes(options = {}) {
 			if (body === undefined) return malformedBody();
 
 			try {
-				const { playerId, name } = body;
+				const { playerId, name, secret } = body;
 
-				// If player already exists, return existing player
+				// Joining again as who they were takes their secret: a page that knows only an id can't take over a player
 				if (playerId && game.players.has(playerId)) {
-					return Response.json(game.players.get(playerId), { status: 200 });
+					if (!game.isPlayersSecret(playerId, secret ?? request.headers.get('x-player-secret') ?? undefined))
+						return Response.json({ message: 'That is not your player' }, { status: 403 });
+					game.onPlayerRejoined?.(game.players.get(playerId));
+
+					return Response.json({ ...game.players.get(playerId), secret: game.secrets.get(playerId) }, { status: 200 });
 				}
 
 				const newPlayer = game.addPlayer(name);
 				logger.info('Player joined', { gameId: game.id, playerId: newPlayer.id, name: newPlayer.name });
 
-				return Response.json(newPlayer, { status: 201 });
+				// The new player's secret goes to their page alone, here; it's what speaks for them from then on
+				return Response.json({ ...newPlayer, secret: game.secrets.get(newPlayer.id) }, { status: 201 });
 			} catch (error) {
 				logger.error('Failed to join game', { gameId: match.gameId, error: error.message });
 				return Response.json({ message: 'Failed to join game', error: error.message }, { status: 500 });
@@ -113,6 +118,8 @@ export default function basicGameRoutes(options = {}) {
 			if (!game.players.has(playerId)) {
 				return Response.json({ message: 'Player not in game' }, { status: 404 });
 			}
+			if (!game.isPlayersSecret(playerId, request.headers.get('x-player-secret') ?? undefined))
+				return Response.json({ message: 'That is not your player' }, { status: 403 });
 
 			try {
 				const removedPlayerId = game.removePlayer(playerId);

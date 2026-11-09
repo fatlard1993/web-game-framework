@@ -37,11 +37,11 @@ test('a player who joins is here; one whose page closes is still a player, but n
 test("a page's announcement makes its player here, and its last page closing makes them gone after a moment", async () => {
 	const { game } = quietGame();
 	const { id } = game.addPlayer('Ada');
-	const server = { games: { [game.id]: game }, clients: {} };
-	const page = { data: {} };
+	const server = { games: { [game.id]: game }, clients: {}, _sendView() {} };
+	const page = { data: {}, send() {} };
 
 	game.setOnline(id, false);
-	Server.prototype._onPage.call(server, page, { gameId: game.id, playerId: id });
+	Server.prototype._onPage.call(server, page, { gameId: game.id, playerId: id, secret: game.secrets.get(id) });
 	expect(game.online.has(id)).toBe(true);
 
 	const wait = Server.LEFT_AFTER_MS;

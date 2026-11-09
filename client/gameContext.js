@@ -42,6 +42,8 @@ class GamePlayers extends Players {
 const gameContext = new Context({
 	gameId: '',
 	playerId: '',
+	// Watching the game rather than playing it
+	watch: false,
 });
 
 // Initialize players after context is created

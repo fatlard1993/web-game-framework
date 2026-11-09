@@ -1,6 +1,9 @@
-import { devConsole, handleExit, serve } from '@vanilla-bean/components/app';
+import os from 'os';
+
+import { devConsole, handleExit, serve, serveStatic } from '@vanilla-bean/components/app';
 
 import { simpleId } from '../utils/identifiers.js';
+import { autoPort } from '../utils/port.js';
 
 import consoleLogger from './consoleLogger.js';
 import Database from './Database.js';
@@ -43,6 +46,7 @@ export default class Server {
 	 * @param {Function} [options.Game] - Game class to instantiate
 	 * @param {object|string} [options.database] - Database instance, or a file path to create one from
 	 * @param {boolean} [options.exit] - Install the exit handler that saves what's pending first (default true)
+	 * @param {boolean|object} [options.static] - Serve the client's build for what the router leaves (serveStatic's options)
 	 * @param {object} [options.logger] - Optional logger with info, warning, error and debug
 	 * @param {number} [options.verbosity] - Log verbosity level (0-3)
 	 * @param {object} [options.build] - Client build options for development's watch (buildClient's; its defaults if
@@ -70,12 +74,17 @@ export default class Server {
 		status,
 		websocket,
 		exit = true,
+		static: statics,
 	}) {
 		this.clients = {};
 		this.games = {};
 		this.Game = Game;
 		this.wsPath = wsPath;
+		// 'auto': PORT, else the port this game had last, else 3000, else any free one (see utils/port)
+		if (port === 'auto') port = autoPort();
 		this.requestedPort = port;
+		// Built-in files (the client's build) for what the router leaves: true for client/build, or serveStatic's options
+		this.statics = statics === true ? {} : statics;
 		this.status = status;
 
 		this.logger = logger || consoleLogger({ verbosity });
@@ -159,9 +168,15 @@ export default class Server {
 							type: parsed.type || 'unknown',
 						});
 
-						// A page saying which game and player it is: the framework's own, not the game's to receive
+						// A page saying which game and player it is, and a player's action: the framework's own, not the
+						// game's to receive
 						if (parsed.type === 'presence') {
 							this._onPage(socket, parsed);
+
+							return;
+						}
+						if (parsed.type === 'act') {
+							this._onAction(socket, parsed);
 
 							return;
 						}
@@ -193,16 +208,85 @@ export default class Server {
 	}
 
 	/**
-	 * A page's announcement of the game and player it's open on (sent by the client's socket when it connects and now
-	 * and then after): that player is here
+	 * A page's announcement of the game it's open on: as a player (with that player's secret, if they have one), or to
+	 * watch. That player is here, and the page is sent its view of the game at once.
 	 * @param {object} socket - The page's socket
-	 * @param {{ gameId: string, playerId: string }} presence - Which game and player
+	 * @param {{ gameId: string, playerId?: string, secret?: string, watch?: boolean }} presence - Which game and player
 	 */
-	_onPage(socket, { gameId, playerId }) {
-		if (typeof gameId !== 'string' || typeof playerId !== 'string') return;
+	_onPage(socket, { gameId, playerId, secret, watch }) {
+		const game = typeof gameId === 'string' ? this.games[gameId] : undefined;
 
-		socket.data.presence = { gameId, playerId };
-		this.games[gameId]?.setOnline?.(playerId, true);
+		if (!game) return;
+		if (watch) socket.data.presence = { gameId, playerId: null };
+		else {
+			if (typeof playerId !== 'string' || !(game.isPlayersSecret?.(playerId, secret) ?? true)) {
+				socket.send(JSON.stringify({ update: 'refused', gameId, error: 'That page is not that player' }));
+
+				return;
+			}
+			socket.data.presence = { gameId, playerId };
+			game.setOnline?.(playerId, true);
+		}
+		if (game.viewFor) this._sendView(socket, game);
+	}
+
+	/**
+	 * A player's action from their page: run as the page's player, whatever the message says, and answered to that page
+	 * alone: { update: 'acted', ack, ok, error? }
+	 * @param {object} socket - The page's socket
+	 * @param {{ action: string, data: *, ack?: * }} message - The action
+	 */
+	_onAction(socket, { action, data, ack }) {
+		const { gameId, playerId } = socket.data.presence ?? {};
+		const game = gameId && this.games[gameId];
+		const result =
+			game && playerId ? game.act(playerId, action, data) : { ok: false, error: 'This page is not in a game' };
+
+		socket.send(JSON.stringify({ update: 'acted', gameId, ack, ...result }));
+	}
+
+	_sendView(socket, game) {
+		const { playerId } = socket.data.presence;
+
+		socket.send(JSON.stringify({ update: 'state', id: game.id, gameId: game.id, ...game.viewFor(playerId) }));
+	}
+
+	/**
+	 * Every page open on `game` sent its own view (Game.viewFor), and no other page
+	 * @param {object} game - The game
+	 */
+	publish(game) {
+		for (const socket of Object.values(this.clients))
+			if (socket.data.presence?.gameId === game.id) this._sendView(socket, game);
+	}
+
+	/**
+	 * What a game broadcasts goes to the pages open on it and to pages that haven't said where they are (the lobby, or
+	 * a game's page from before it said), not to pages open on another game
+	 * @param {string} gameId - The game's
+	 * @param {object} data - What's sent
+	 */
+	gameBroadcast(gameId, data) {
+		const serialized = JSON.stringify(data);
+
+		for (const socket of Object.values(this.clients)) {
+			const at = socket.data.presence?.gameId;
+
+			if (!at || at === gameId) socket.send(serialized);
+		}
+	}
+
+	/**
+	 * Where a phone on the same network reaches this server: this machine's first network address and the port. A page
+	 * opened as localhost can't put localhost in a QR code; it asks this (GET /join-url).
+	 * @returns {string|null} Like http://192.168.1.20:3000, or null with no network
+	 */
+	lanUrl() {
+		const address = Object.values(os.networkInterfaces())
+			.flat()
+			.find(found => found?.family === 'IPv4' && !found.internal)?.address;
+
+		return address ? `http://${address}:${this.port}` : null;
 	}
 
 	/**
@@ -409,8 +493,13 @@ export default class Server {
 			}
 
 			if (pathname === STATUS_PATH && request.method === 'GET') return Response.json(this.statusReport());
+			if (pathname === '/join-url' && request.method === 'GET') return Response.json({ url: this.lanUrl() });
 
-			return this.gamesLoaded.then(() => customRouter?.(this)(request, httpServer));
+			return this.gamesLoaded.then(async () => {
+				const answered = await customRouter?.(this)(request, httpServer);
+
+				return answered ?? (this.statics ? serveStatic(request, this.statics) : undefined);
+			});
 		};
 	}
 }

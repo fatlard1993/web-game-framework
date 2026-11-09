@@ -3,6 +3,7 @@ import { Notify } from '@vanilla-bean/components';
 import { connectSocket } from '@vanilla-bean/components/utils';
 
 import gameContext from './gameContext.js';
+import { secretOf } from './secrets.js';
 
 /**
  * WebSocket wrapper with automatic reconnection and listener management
@@ -49,13 +50,24 @@ const PRESENCE_AGAIN_MS = 30_000;
 let announced = '';
 let announcedAt = 0;
 
-const announce = () => {
-	const { gameId, playerId } = gameContext;
-	const which = gameId && playerId ? `${gameId}\n${playerId}` : '';
+/**
+ * Tells the server which game this page is on, as which player (with their secret) or watching: at once when it
+ * changes, and again now and then. enterGame calls it the moment the page has a game.
+ * @param {boolean} [now] - Say it even if it was said lately
+ */
+export const announce = (now = false) => {
+	const { gameId, playerId, watch } = gameContext;
+	const which = gameId && (playerId || watch) ? `${gameId}\n${watch ? '' : playerId}` : '';
 
 	if (!which || socket.readyState !== WebSocket.OPEN) return;
-	if (which === announced && Date.now() - announcedAt < PRESENCE_AGAIN_MS) return;
-	socket.send(JSON.stringify({ type: 'presence', gameId, playerId }));
+	if (!now && which === announced && Date.now() - announcedAt < PRESENCE_AGAIN_MS) return;
+	socket.send(
+		JSON.stringify(
+			watch
+				? { type: 'presence', gameId, watch: true }
+				: { type: 'presence', gameId, playerId, secret: secretOf(playerId) },
+		),
+	);
 	announced = which;
 	announcedAt = Date.now();
 };

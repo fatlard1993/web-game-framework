@@ -9,6 +9,7 @@ export { default as Server } from './core/Server.js';
 export { default as Game } from './core/Game.js';
 export { default as Database } from './core/Database.js';
 export { default as basicGameRoutes } from './core/router/basicGameRoutes.js';
+export { refuse, ActionRefused } from './core/actions.js';
 
 // Utils
 export * from './utils/index.js';

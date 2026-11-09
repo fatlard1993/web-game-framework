@@ -1,5 +1,7 @@
 import { simpleId } from '../utils/identifiers.js';
 
+import { ActionRefused, unsaveable } from './actions.js';
+
 import Players from './Players.js';
 import EventRouter from './EventRouter.js';
 import consoleLogger from './consoleLogger.js';
@@ -18,6 +20,11 @@ import consoleLogger from './consoleLogger.js';
  * - onPlayerRemoved(playerId) - Called after player is removed
  * - onPresence(playerId, online) - Called when a player's page opens on the game or the last one closes
  * - onDispose() - Called when the game is removed, after its loops (every) have stopped
+ * - createPlayer({ id, name }) - What a new player starts with, merged into them
+ * - onPlayerRejoined(player) - Called when a player joins again with the id they had
+ *
+ * Statics: `version` and `migrations` (saves brought up to date), `transient` (state keys never saved); and an
+ * `actions` object of what players can do (see act)
  * @example
  * ```js
  * class MyGame extends Game {
@@ -48,6 +55,10 @@ export default class Game {
 	 * @param {...*} options.rest - Additional game-specific options
 	 */
 	constructor({ saveState = {}, server, logger, ...options }) {
+		// A save from an older version of the game is brought up to this one before anything reads it: the subclass's
+		// constructor sees it migrated, through the same object
+		this.constructor.migrate(saveState);
+
 		// Generate unique ID
 		this.id = saveState.id || this._generateId();
 		this.name = saveState.name || options.name || this.id;
@@ -81,7 +92,20 @@ export default class Game {
 			this.saveNow = () => {
 				clearTimeout(this._saveTimer);
 				this._saveTimer = null;
-				server.database.collections.games.set({ id: this.id, data: this.toSaveState() });
+
+				const data = this.toSaveState();
+
+				// In development, a save that won't come back as it went (a Map, a Set, a function, a class instance) is
+				// said once, where it is, rather than found missing after a restart
+				if (process.env.NODE_ENV === 'development' && !this._warnedUnsaveable) {
+					const where = unsaveable(data);
+
+					if (where) {
+						this._warnedUnsaveable = true;
+						this.logger.warning(`The save won't survive a restart as it is: ${where}`, { gameId: this.id });
+					}
+				}
+				server.database.collections.games.set({ id: this.id, data });
 			};
 		} else {
 			this.save = () => {}; // No-op if no database
@@ -94,6 +118,8 @@ export default class Game {
 				this.players.set(player.id, player);
 			});
 		}
+		// Each player's secret, known to the server and to that player's own page alone (see join)
+		this.secrets = new Map(Object.entries(saveState.secrets ?? {}));
 
 		// Register game with server
 		if (server) {
@@ -144,7 +170,102 @@ export default class Game {
 			name: this.name,
 			options: this.options,
 			players: [...this.players.values()],
+			secrets: Object.fromEntries(this.secrets),
+			...(this.constructor.version && { version: this.constructor.version }),
 		};
+	}
+
+	/**
+	 * The game's `state` as it should be saved: without the keys named in `static transient` (what's rebuilt on load, or
+	 * changes every tick: grains of sand in flight, a timer handle)
+	 * @returns {object} The state to save
+	 */
+	savedState() {
+		const { transient = [] } = this.constructor;
+		const state = { ...this.state };
+
+		for (const key of transient) delete state[key];
+
+		return state;
+	}
+
+	/**
+	 * Brings a save up to the game's `static version` by its `static migrations` ({ [version]: save => void }, each
+	 * changing the save in place from the version before), in order. A save with no version is version 1.
+	 * @param {object} save - A save state, changed in place
+	 * @returns {object} The same save
+	 */
+	static migrate(save) {
+		const { version, migrations = {} } = this;
+
+		if (!version || !save?.id) return save;
+
+		for (let at = (save.version ?? 1) + 1; at <= version; at++) migrations[at]?.(save);
+		save.version = version;
+
+		return save;
+	}
+
+	/**
+	 * What one player's page is shown of the game (or a watcher's, with null): everything by default. Override it to keep
+	 * what a player shouldn't see off their screen (other players' hands, what's under the fog), and to send each page
+	 * only what it draws.
+	 * @param {string|null} _playerId - Whose page, or null for someone watching
+	 * @returns {object} The view
+	 */
+	viewFor(_playerId) {
+		return { ...this.toClient(), state: this.state };
+	}
+
+	/**
+	 * Every page open on this game is sent its own view (viewFor) as `state`, and no page elsewhere. The way to show a
+	 * change; it happens by itself after each action.
+	 */
+	publish() {
+		this.server?.publish?.(this);
+		this.save();
+	}
+
+	/**
+	 * A player's action, from their page (the Server ties it to the page's player; the message can't claim another):
+	 * runs the game's `actions[name](player, data)` with `this` the game, then publishes. An action throws
+	 * refuse('why') to turn it down, which the player's page is told.
+	 * @param {string} playerId - Whose
+	 * @param {string} name - Which action
+	 * @param {*} data - What it carries
+	 * @returns {{ ok: true } | { ok: false, error: string }} What came of it
+	 */
+	act(playerId, name, data) {
+		const action = Object.hasOwn(this.actions ?? {}, name) ? this.actions[name] : null;
+		const player = this.players.get(playerId);
+
+		if (typeof action !== 'function') return { ok: false, error: `No such action: ${name}` };
+		if (!player) return { ok: false, error: 'Not a player in this game' };
+
+		try {
+			action.call(this, player, data);
+		} catch (error) {
+			if (error instanceof ActionRefused) return { ok: false, error: error.message };
+			this.logger.error('An action failed', { gameId: this.id, action: name, error: error.stack ?? error.message });
+
+			return { ok: false, error: 'Something went wrong' };
+		}
+
+		this.publish();
+
+		return { ok: true };
+	}
+
+	/**
+	 * Whether `secret` is the player's: a player who joined before secrets existed has none and needs none
+	 * @param {string} playerId - Whose
+	 * @param {string} [secret] - What the page says
+	 * @returns {boolean} Whether the page may speak for that player
+	 */
+	isPlayersSecret(playerId, secret) {
+		const known = this.secrets.get(playerId);
+
+		return this.players.has(playerId) && (!known || known === secret);
 	}
 
 	/**
@@ -209,8 +330,9 @@ export default class Game {
 			});
 		}
 
-		// Broadcast to all clients
-		this.server.socketBroadcast(safeData);
+		// To the pages open on this game, and those that haven't said where they are (Server.gameBroadcast)
+		if (this.server.gameBroadcast) this.server.gameBroadcast(this.id, safeData);
+		else this.server.socketBroadcast(safeData);
 
 		// Trigger save
 		this.save();
@@ -224,12 +346,12 @@ export default class Game {
 	addPlayer(name) {
 		const id = this._generateId();
 
-		const player = {
-			id,
-			name,
-		};
+		const made = { id, name };
+		// Hook: createPlayer, for what each player starts with (a color, a seat, a score of zero)
+		const player = typeof this.createPlayer === 'function' ? { ...made, ...this.createPlayer(made), id } : made;
 
 		this.players.set(id, player);
+		this.secrets.set(id, crypto.randomUUID());
 		// Joining is being here
 		this.online.add(id);
 
@@ -305,6 +427,7 @@ export default class Game {
 	removePlayer(id) {
 		this.players.delete(id);
 		this.online.delete(id);
+		this.secrets.delete(id);
 
 		// Hook: onPlayerRemoved
 		if (typeof this.onPlayerRemoved === 'function') {
