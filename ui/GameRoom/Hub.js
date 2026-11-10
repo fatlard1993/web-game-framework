@@ -40,7 +40,7 @@ export default class Hub extends View {
 		// A press anywhere else dismisses the popover; the list's buttons stop their press from reaching here
 		this.options.onPointerPress = () => {
 			if (this.gamePopover) {
-				this.gamePopover.elem.remove();
+				this.gamePopover.destroy();
 				this.gamePopover = null;
 			}
 		};
@@ -121,7 +121,7 @@ export default class Hub extends View {
 							event.stopPropagation();
 
 							if (this.gamePopover) {
-								this.gamePopover.elem.remove();
+								this.gamePopover.destroy();
 								this.gamePopover = null;
 							} else {
 								this.gamePopover = new GameInfoPopover({

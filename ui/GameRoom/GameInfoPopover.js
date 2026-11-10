@@ -36,7 +36,7 @@ export default class GameInfoPopover extends (styled.Popover`
 			appendTo: this,
 			style: { display: 'block', margin: '6px auto' },
 			onPointerPress: () => {
-				this.elem.remove();
+				this.destroy();
 
 				new this.options.dialogComponent({ game });
 			},
