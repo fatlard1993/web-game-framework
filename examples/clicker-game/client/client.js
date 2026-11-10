@@ -149,7 +149,7 @@ class GameCard extends Component {
 
 		new Button({
 			textContent: game.status === 'waiting' ? 'Join' : 'Watch',
-			onPointerUp: () => showJoinDialog(game.id),
+			onPointerPress: () => showJoinDialog(game.id),
 			appendTo: this,
 		});
 	}
@@ -176,8 +176,8 @@ class LobbyView extends Component {
 		new Component({
 			style: { display: 'flex', gap: '1rem', margin: '1rem 0' },
 			append: [
-				new Button({ textContent: 'Create Game', onPointerUp: createGame }),
-				new Button({ textContent: 'Refresh', onPointerUp: loadGames }),
+				new Button({ textContent: 'Create Game', onPointerPress: createGame }),
+				new Button({ textContent: 'Refresh', onPointerPress: loadGames }),
 			],
 			appendTo: this,
 		});
@@ -216,7 +216,7 @@ class GameView extends Component {
 		new Component({
 			append: [
 				new Component({ tag: 'h2', textContent: game.name }),
-				new Button({ textContent: 'Leave', onPointerUp: leaveGame }),
+				new Button({ textContent: 'Leave', onPointerPress: leaveGame }),
 			],
 			appendTo: this,
 		});
@@ -225,7 +225,7 @@ class GameView extends Component {
 			new Component({ tag: 'p', textContent: `You are: ${state.playerName}`, appendTo: this });
 			new Button({
 				textContent: 'Start Game',
-				onPointerUp: () => send({ type: 'startGame', gameId: state.gameId }),
+				onPointerPress: () => send({ type: 'startGame', gameId: state.gameId }),
 				appendTo: this,
 			});
 		}
@@ -275,7 +275,7 @@ class GameView extends Component {
 					color: 'white',
 				},
 				textContent: 'CLICK!',
-				onPointerUp: () => send({ type: 'click', gameId: state.gameId, playerId: state.playerId }),
+				onPointerPress: () => send({ type: 'click', gameId: state.gameId, playerId: state.playerId }),
 				appendTo: this,
 			});
 
@@ -304,7 +304,7 @@ class GameView extends Component {
 
 			new Button({
 				textContent: 'Play Again',
-				onPointerUp: () => send({ type: 'resetGame', gameId: state.gameId }),
+				onPointerPress: () => send({ type: 'resetGame', gameId: state.gameId }),
 				appendTo: this,
 			});
 		}
@@ -356,7 +356,7 @@ function showJoinDialog(gameId) {
 			})),
 			new Button({
 				textContent: 'Join',
-				onPointerUp: () => {
+				onPointerPress: () => {
 					if (nameInput.elem.value) {
 						joinGame(gameId, nameInput.elem.value);
 						joinDialog.close();
