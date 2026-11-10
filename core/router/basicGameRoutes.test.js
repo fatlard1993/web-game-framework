@@ -1,3 +1,4 @@
+import { refuse } from '../actions.js';
 import basicGameRoutes from './basicGameRoutes.js';
 
 const quietLogger = { info: () => {}, warning: () => {}, error: () => {}, debug: () => {} };
@@ -54,5 +55,30 @@ describe('basicGameRoutes', () => {
 			expect(response.status).toBe(400);
 			expect(await response.json()).toEqual({ error: 'Malformed JSON body' });
 		}
+	});
+
+	test("a game is made from its options alone: a save sent along is dropped, a non-object refused, and a game's refusal is a 400", async () => {
+		const routes = basicGameRoutes({ logger: quietLogger });
+		const made = [];
+		const server = {
+			...mockServer(),
+			createGame: options => {
+				made.push(options);
+				if (options.packs?.length === 0) refuse('Pick at least one pack');
+
+				return { id: 'new', name: options.name, toClient: () => ({ id: 'new' }) };
+			},
+		};
+		const create = body =>
+			routes(new Request('http://localhost/games', { method: 'POST', body: JSON.stringify(body) }), server);
+
+		expect((await create({ name: 'x', saveState: { id: 'evil' }, server: 1, logger: 2 })).status).toBe(201);
+		expect(made[0]).toEqual({ name: 'x' });
+		expect((await create([1, 2])).status).toBe(400);
+
+		const refused = await create({ name: 'x', packs: [] });
+
+		expect(refused.status).toBe(400);
+		expect(await refused.json()).toEqual({ message: 'Pick at least one pack' });
 	});
 });

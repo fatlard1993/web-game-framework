@@ -1,5 +1,7 @@
 import { requestMatch } from '@vanilla-bean/components/app';
 
+import { ActionRefused } from '../actions.js';
+
 /**
  * Basic game CRUD routes for web-game-framework
  *
@@ -56,9 +58,14 @@ export default function basicGameRoutes(options = {}) {
 		if (match) {
 			const body = await readBody(request);
 			if (body === undefined) return malformedBody();
+			if (!body || typeof body !== 'object' || Array.isArray(body))
+				return Response.json({ message: 'A game is made from an object of its options' }, { status: 400 });
+
+			// Only the game's own options: never a save to build it from, nor what the server alone hands a game
+			const { saveState, server: _server, logger: _logger, ...options } = body;
 
 			try {
-				const game = server.createGame(body);
+				const game = server.createGame(options);
 
 				logger.info('Game created', { gameId: game.id, name: game.name });
 
@@ -66,6 +73,8 @@ export default function basicGameRoutes(options = {}) {
 
 				return Response.json(game.toClient(), { status: 201 });
 			} catch (error) {
+				// A game turning its options down (refuse() in its constructor) is the asker's to fix
+				if (error instanceof ActionRefused) return Response.json({ message: error.message }, { status: 400 });
 				logger.error('Failed to create game', { error: error.message });
 				return Response.json({ message: 'Failed to create game', error: error.message }, { status: 500 });
 			}
