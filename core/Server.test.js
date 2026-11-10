@@ -47,6 +47,27 @@ describe('Server database option', () => {
 		expect(server.database.options.filePath).toBe(filePath);
 	});
 
+	test('a working copy named in GAME_DATABASE saves to its own file, started from the live saves, and leaves the live file be', () => {
+		const own = temporaryFilePath();
+
+		fs.writeFileSync(filePath, JSON.stringify({ games: { a: { id: 'a' } } }));
+		process.env.GAME_DATABASE = own;
+		try {
+			server = new Server({ port: 0, exit: false, database: filePath, logger: quietLogger });
+
+			expect(server.database.options.filePath).toBe(own);
+			expect(JSON.parse(fs.readFileSync(own, 'utf8'))).toEqual({ games: { a: { id: 'a' } } });
+
+			// Its own once it has one: the live saves aren't copied over it again
+			fs.writeFileSync(own, JSON.stringify({ games: {} }));
+			server = new Server({ port: 0, exit: false, database: filePath, logger: quietLogger });
+			expect(JSON.parse(fs.readFileSync(own, 'utf8'))).toEqual({ games: {} });
+		} finally {
+			delete process.env.GAME_DATABASE;
+			fs.rmSync(own, { force: true });
+		}
+	});
+
 	test('throws on a database option that is neither instance nor string', () => {
 		expect(() => new Server({ port: 0, exit: false, database: 42, logger: quietLogger })).toThrow(
 			'Database instance or a file path',

@@ -1,4 +1,6 @@
+import { copyFileSync, existsSync, mkdirSync } from 'fs';
 import os from 'os';
+import path from 'path';
 
 import { devConsole, handleExit, serve, serveStatic } from '@vanilla-bean/components/app';
 
@@ -33,6 +35,20 @@ export const STATUS_PATH = '/.well-known/web-game';
  * });
  * ```
  */
+// A working copy run beside the game's live one (paude's arcade, as it's built) names its own save file in
+// GAME_DATABASE, so the two never write over each other's games: started from a copy of the live saves the first time
+const ownSaves = live => {
+	const own = process.env.GAME_DATABASE;
+
+	if (!own) return live;
+	if (!existsSync(own) && existsSync(live)) {
+		mkdirSync(path.dirname(own), { recursive: true });
+		copyFileSync(live, own);
+	}
+
+	return own;
+};
+
 export default class Server {
 	/** How long a closed page's player stays here, for a reload to come back within */
 	static LEFT_AFTER_MS = 5000;
@@ -89,7 +105,7 @@ export default class Server {
 
 		this.logger = logger || consoleLogger({ verbosity });
 
-		if (typeof database === 'string') database = new Database({ filePath: database, logger: this.logger });
+		if (typeof database === 'string') database = new Database({ filePath: ownSaves(database), logger: this.logger });
 		else if (database && !(database instanceof Database)) {
 			throw new Error('Server option "database" must be a Database instance or a file path string');
 		}
