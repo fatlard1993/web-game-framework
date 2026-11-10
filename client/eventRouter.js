@@ -30,7 +30,8 @@ export function createClientEventRouter({ gameId, context, logger } = {}) {
 	// Setup socket message listener
 	const cleanup = onMessage(async data => {
 		// Filter by game ID if provided
-		if (gameId && data.id !== gameId) {
+		// Every broadcast names its game in gameId; id is the player's on presence and removePlayer
+		if (gameId && (data.gameId ?? data.id) !== gameId) {
 			return;
 		}
 

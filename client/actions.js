@@ -18,14 +18,19 @@ const listen = () => {
 		waiting.delete(message.ack);
 		if (!message.ok && !quiet && typeof Notify !== 'undefined')
 			new Notify({ x: window.innerWidth / 2, y: 100, intent: 'warning', content: message.error, timeout: 2500 });
-		resolve(message.ok ? { ok: true } : { ok: false, error: message.error });
+		resolve(
+			message.ok
+				? { ok: true, ...('result' in message && { result: message.result }) }
+				: { ok: false, error: message.error },
+		);
 	});
 };
 
 /**
  * Asks the server to do a player action in the game this page is on (enterGame says which): the server runs the
  * game's `actions[name]` as this page's player, then every page redraws from what it publishes. A refusal shows as a
- * notice unless `quiet`. Resolves to { ok } or { ok: false, error }; one never answered (the connection lost) gives up
+ * notice unless `quiet`. Resolves to { ok, result } (what the action returned, if anything) or { ok: false, error };
+ * one never answered (the connection lost) gives up
  * after `timeout`.
  * @example act('move', { dx: 1, dy: 0 });
  * @param {string} name - The action

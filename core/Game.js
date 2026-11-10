@@ -229,11 +229,12 @@ export default class Game {
 	/**
 	 * A player's action, from their page (the Server ties it to the page's player; the message can't claim another):
 	 * runs the game's `actions[name](player, data)` with `this` the game, then publishes. An action throws
-	 * refuse('why') to turn it down, which the player's page is told.
+	 * refuse('why') to turn it down, which the player's page is told. What the action returns (an id it made, say) goes
+	 * back to the page as `result`.
 	 * @param {string} playerId - Whose
 	 * @param {string} name - Which action
 	 * @param {*} data - What it carries
-	 * @returns {{ ok: true } | { ok: false, error: string }} What came of it
+	 * @returns {{ ok: true, result?: * } | { ok: false, error: string }} What came of it
 	 */
 	act(playerId, name, data) {
 		const action = Object.hasOwn(this.actions ?? {}, name) ? this.actions[name] : null;
@@ -242,8 +243,10 @@ export default class Game {
 		if (typeof action !== 'function') return { ok: false, error: `No such action: ${name}` };
 		if (!player) return { ok: false, error: 'Not a player in this game' };
 
+		let result;
+
 		try {
-			action.call(this, player, data);
+			result = action.call(this, player, data);
 		} catch (error) {
 			if (error instanceof ActionRefused) return { ok: false, error: error.message };
 			this.logger.error('An action failed', { gameId: this.id, action: name, error: error.stack ?? error.message });
@@ -253,7 +256,7 @@ export default class Game {
 
 		this.publish();
 
-		return { ok: true };
+		return result === undefined ? { ok: true } : { ok: true, result };
 	}
 
 	/**

@@ -28,6 +28,9 @@ class Counter extends Game {
 		broken() {
 			throw new Error('a bug');
 		},
+		make() {
+			return 'made-1';
+		},
 	};
 
 	createPlayer() {
@@ -60,13 +63,13 @@ test('an action runs as the player, publishes, and a refusal or a bug is answere
 
 	expect(ben.color).toBe('teal');
 	expect(game.act(ben.id, 'add', { by: 2 })).toEqual({ ok: true });
+	expect(game.act(ben.id, 'make')).toEqual({ ok: true, result: 'made-1' });
 	expect(game.state).toMatchObject({ count: 2, lastBy: 'Ben' });
-	expect(published).toEqual([game.id]);
 	expect(game.act(ben.id, 'add', { by: 'lots' })).toEqual({ ok: false, error: 'Add a whole number' });
 	expect(game.act(ben.id, 'broken')).toEqual({ ok: false, error: 'Something went wrong' });
 	expect(game.act(ben.id, 'toString')).toMatchObject({ ok: false });
 	expect(game.act('nobody', 'add', { by: 1 })).toEqual({ ok: false, error: 'Not a player in this game' });
-	expect(published).toHaveLength(1);
+	expect(published).toHaveLength(2);
 });
 
 test("the server runs an action as the page's player, whatever the message claims, and tells that page alone", () => {
