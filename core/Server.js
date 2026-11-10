@@ -227,7 +227,7 @@ export default class Server {
 			socket.data.presence = { gameId, playerId };
 			game.setOnline?.(playerId, true);
 		}
-		if (game.viewFor) this._sendView(socket, game);
+		if (game.viewFor) this._sendView(socket, game, { first: true });
 	}
 
 	/**
@@ -245,10 +245,12 @@ export default class Server {
 		socket.send(JSON.stringify({ update: 'acted', gameId, ack, ...result }));
 	}
 
-	_sendView(socket, game) {
+	_sendView(socket, game, { first = false } = {}) {
 		const { playerId } = socket.data.presence;
 
-		socket.send(JSON.stringify({ update: 'state', id: game.id, gameId: game.id, ...game.viewFor(playerId) }));
+		socket.send(
+			JSON.stringify({ update: 'state', id: game.id, gameId: game.id, ...game.viewFor(playerId, { first }) }),
+		);
 	}
 
 	/**

@@ -140,3 +140,28 @@ test('says where a save would not come back as it went', () => {
 	expect(unsaveable({ at: new Date() })).toBe('save.at (a Date instance)');
 	expect(unsaveable({ speed: Infinity })).toBe('save.speed (Infinity)');
 });
+
+test("a page's first view says so, for what's too big to send after every change, and a broadcast is followed by afterBroadcast", () => {
+	const seen = [];
+	const told = [];
+	const server = { games: {}, clients: {}, socketBroadcast() {} };
+
+	server._sendView = Server.prototype._sendView;
+	server.publish = game => Server.prototype.publish.call(server, game);
+
+	const game = new Counter({ server, logger: quiet });
+	const ben = game.addPlayer('Ben');
+
+	game.viewFor = (playerId, how) => (seen.push(how), { me: playerId });
+	game.afterBroadcast = key => told.push(key);
+	server.games[game.id] = game;
+
+	const page = { data: {}, send() {} };
+
+	server.clients.page = page;
+	Server.prototype._onPage.call(server, page, { gameId: game.id, playerId: ben.id, secret: game.secrets.get(ben.id) });
+	game.publish();
+	game.broadcast('news', { x: 1 });
+	expect(seen).toEqual([{ first: true }, { first: false }]);
+	expect(told).toContain('news');
+});

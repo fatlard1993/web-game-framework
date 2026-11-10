@@ -22,6 +22,7 @@ import consoleLogger from './consoleLogger.js';
  * - onDispose() - Called when the game is removed, after its loops (every) have stopped
  * - createPlayer({ id, name }) - What a new player starts with, merged into them
  * - onPlayerRejoined(player) - Called when a player joins again with the id they had
+ * - afterBroadcast(key, data) - Called after each broadcast has gone out
  *
  * Statics: `version` and `migrations` (saves brought up to date), `transient` (state keys never saved); and an
  * `actions` object of what players can do (see act)
@@ -210,10 +211,13 @@ export default class Game {
 	 * What one player's page is shown of the game (or a watcher's, with null): everything by default. Override it to keep
 	 * what a player shouldn't see off their screen (other players' hands, what's under the fog), and to send each page
 	 * only what it draws.
+	 * `first` is true for the view a page gets as it opens (or comes back after a lost connection): the place for what's
+	 * too big to send after every change, like a whole map.
 	 * @param {string|null} _playerId - Whose page, or null for someone watching
+	 * @param {{ first: boolean }} [_how] - Whether this is the page's first view
 	 * @returns {object} The view
 	 */
-	viewFor(_playerId) {
+	viewFor(_playerId, _how) {
 		return { ...this.toClient(), state: this.state };
 	}
 
@@ -336,6 +340,9 @@ export default class Game {
 		// To the pages open on this game, and those that haven't said where they are (Server.gameBroadcast)
 		if (this.server.gameBroadcast) this.server.gameBroadcast(this.id, safeData);
 		else this.server.socketBroadcast(safeData);
+
+		// Hook: afterBroadcast, for what follows a change everyone was told of (achievements, a log)
+		if (typeof this.afterBroadcast === 'function') this.afterBroadcast(key, safeData);
 
 		// Trigger save
 		this.save();
