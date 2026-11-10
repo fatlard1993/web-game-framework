@@ -19,9 +19,23 @@ export default class GameInfoDialog extends Dialog {
 				},
 				'Join',
 			],
-			onButtonPress: ({ button }) => {
+			onButtonPress: async ({ button }) => {
 				if (button === 'Join') window.location.href = `#/join/${options.game.id}`;
-				else if (button?.textContent === 'Delete') deleteGame(options.game.id);
+				else if (button?.textContent === 'Delete') {
+					const players = options.game.players.length;
+					const sure = await Dialog.confirm({
+						header: `Delete ${options.game.name}?`,
+						body: players
+							? `${players} ${players === 1 ? 'player loses their place' : 'players lose their places'} in it, for good.`
+							: 'It is gone for good.',
+						intent: 'danger',
+						confirmLabel: 'Delete',
+					});
+
+					if (!sure) return;
+
+					await deleteGame(options.game.id);
+				}
 
 				this.close();
 			},
