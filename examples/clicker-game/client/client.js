@@ -339,7 +339,7 @@ class GameView extends Component {
 // Join dialog
 let joinDialog = null;
 function showJoinDialog(gameId) {
-	if (joinDialog) joinDialog.elem.remove();
+	joinDialog?.destroy();
 
 	let nameInput;
 	joinDialog = new Dialog({
