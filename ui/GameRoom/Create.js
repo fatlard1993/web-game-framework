@@ -1,4 +1,4 @@
-import { Link, Button, Form } from '@vanilla-bean/components';
+import { Link, Button, Form, theme } from '@vanilla-bean/components';
 
 import { View } from '../layout/index.js';
 import { createGame } from '../../client/index.js';
@@ -16,6 +16,8 @@ export default class Create extends View {
 			{
 				formInputs: [{ key: 'name', label: 'Room Name' }],
 				...options,
+				// The form reads best in a column on a wide screen
+				body: { column: true, ...options.body },
 				toolbar: {
 					heading: options.toolbar?.heading || 'New Game',
 					left: [
@@ -64,10 +66,8 @@ export default class Create extends View {
 
 	_init() {
 		this.form = new Form({
-			style: {
-				margin: '12px 0 12px 12px',
-				paddingRight: '12px',
-			},
+			// The column is the side padding
+			style: { margin: `${theme.space.md} 0` },
 			data: this.options.subscriber('formData'),
 			inputs: this.options.subscriber('formInputs'),
 		});

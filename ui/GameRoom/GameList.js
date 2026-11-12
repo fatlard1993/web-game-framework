@@ -30,7 +30,8 @@ export class GameList extends styled(
 		flex-direction: column;
 		gap: ${space.sm};
 		margin: 0;
-		padding: ${space.sm};
+		/* Its sides are the view's column */
+		padding: ${space.sm} 0;
 		overflow: visible;
 
 		& > li {

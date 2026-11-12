@@ -1,4 +1,4 @@
-import { Link, Button, Notify, Form } from '@vanilla-bean/components';
+import { Link, Button, Notify, Form, theme } from '@vanilla-bean/components';
 
 import { View } from '../layout/index.js';
 import { getGame, joinGame } from '../../client/index.js';
@@ -19,6 +19,8 @@ export default class Join extends View {
 			{
 				formInputs: [{ key: 'name', label: 'Player Name' }],
 				...options,
+				// The form reads best in a column on a wide screen
+				body: { column: true, ...options.body },
 				toolbar: {
 					heading: options.toolbar?.heading || 'Join Game',
 					left: [
@@ -88,10 +90,8 @@ export default class Join extends View {
 		}
 
 		this.form = new Form({
-			style: {
-				margin: '12px 0 12px 12px',
-				paddingRight: '12px',
-			},
+			// The column is the side padding
+			style: { margin: `${theme.space.md} 0` },
 			data: this.options.subscriber('formData'),
 			inputs: this.options.subscriber('formInputs'),
 		});

@@ -46,4 +46,11 @@ describe('Hub', () => {
 		await screen.findByRole('link', { name: 'Join' });
 		expect(screen.getAllByRole('link').map(link => link.textContent)).toEqual(['New Game', 'Join']);
 	});
+
+	test('lists the games in a reading column', async () => {
+		hub = new Hub({ appendTo: container });
+
+		await screen.findByRole('link', { name: 'Join' });
+		expect(hub._body.elem).toHaveClass('column');
+	});
 });

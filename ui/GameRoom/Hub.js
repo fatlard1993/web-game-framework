@@ -22,6 +22,8 @@ export default class Hub extends View {
 		super(
 			{
 				...options,
+				// The games read best in a column on a wide screen
+				body: { column: true, ...options.body },
 				toolbar: {
 					heading: options.toolbar?.heading || 'Game Hub',
 					left: options.toolbar?.left || [],
