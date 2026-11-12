@@ -1,4 +1,4 @@
-import { Link, Button, Notify, EmptyState, copyToClipboard } from '@vanilla-bean/components';
+import { Link, Button, Notify, EmptyState, copyToClipboard, failureReason } from '@vanilla-bean/components';
 
 import { View } from '../layout/index.js';
 import { getGames, onMessage } from '../../client/index.js';
@@ -54,15 +54,38 @@ export default class Hub extends View {
 	}
 
 	async _init() {
-		this._body.empty();
 		this._socketCleanup?.();
+
+		// Loading until the list first shows; after that, a live update keeps it on screen until the new one is here
+		if (!this._listed) {
+			this._body.empty();
+			new EmptyState({ loading: true, appendTo: this._body });
+		}
 
 		const games = await getGames();
 
-		if (games.response.status !== 200) {
-			new Notify({ intent: 'danger', content: games.body?.message || games.response.statusText });
+		this._body.empty();
+
+		if (games.status === 'error') {
+			this._listed = false;
+			new EmptyState({
+				icon: 'triangle-exclamation',
+				title: "Couldn't load the games",
+				message: failureReason(games),
+				action: {
+					textContent: 'Try again',
+					onPointerPress: () => {
+						// A refusal is cached like a list: ask again
+						games.invalidateCache();
+						this._init();
+					},
+				},
+				appendTo: this._body,
+			});
 			return;
 		}
+
+		this._listed = true;
 
 		const socketCleanup = onMessage(data => {
 			if (
@@ -89,6 +112,8 @@ export default class Hub extends View {
 				});
 			} else {
 				new EmptyState({
+					icon: 'gamepad',
+					title: 'No games yet',
 					message: this.options.noGamesMessage || 'No games found. Create one to get started!',
 					appendTo: this._body,
 				});
