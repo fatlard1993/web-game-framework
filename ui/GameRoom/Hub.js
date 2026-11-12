@@ -122,7 +122,8 @@ export default class Hub extends View {
 						onPointerPress: event => {
 							event.stopPropagation();
 
-							if (this.gamePopover) {
+							// One that destroyed itself (its game couldn't be loaded) is off the page: open another
+							if (this.gamePopover?.elem.isConnected) {
 								this.gamePopover.destroy();
 								this.gamePopover = null;
 							} else {

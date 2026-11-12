@@ -1,4 +1,4 @@
-import { Component, Button, styled } from '@vanilla-bean/components';
+import { Component, Button, Notify, failureReason, styled } from '@vanilla-bean/components';
 
 import { getGame } from '../../client/index.js';
 import GameInfoDialog from './GameInfoDialog.js';
@@ -28,7 +28,16 @@ export default class GameInfoPopover extends (styled.Popover`
 	}
 
 	async _init() {
-		const game = (await getGame(this.options.gameId)).body;
+		const found = await getGame(this.options.gameId);
+
+		if (found.status === 'error') {
+			new Notify({ intent: 'danger', content: `Couldn't load the game: ${failureReason(found)}` });
+			this.destroy();
+
+			return;
+		}
+
+		const game = found.body;
 
 		this.options.infoRows(game).forEach(content => new Component({ content, appendTo: this }));
 		new Button({

@@ -1,4 +1,4 @@
-import { Link, Button, Form, theme } from '@vanilla-bean/components';
+import { Link, Button, Form, Notify, failureReason, theme } from '@vanilla-bean/components';
 
 import { View } from '../layout/index.js';
 import { createGame } from '../../client/index.js';
@@ -53,15 +53,21 @@ export default class Create extends View {
 	}
 
 	/**
-	 * Validate and submit the form, then navigate to the new game's join page
+	 * Validate and submit the form, then navigate to the new game's join page; a refused create says why and stays
 	 * Override to add game-specific validation before calling super.create()
 	 */
 	async create() {
 		if (this.form.hasErrors()) return;
 
-		const game = (await createGame({ body: this.createBody() })).body;
+		const created = await createGame({ body: this.createBody() });
 
-		window.location.href = `#/join/${game.id}`;
+		if (created.status === 'error') {
+			new Notify({ intent: 'danger', content: `Couldn't create the game: ${failureReason(created)}` });
+
+			return;
+		}
+
+		window.location.href = `#/join/${created.body.id}`;
 	}
 
 	_init() {

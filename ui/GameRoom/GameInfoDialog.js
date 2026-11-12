@@ -1,4 +1,4 @@
-import { Component, Dialog, List, Label } from '@vanilla-bean/components';
+import { Component, Dialog, List, Label, Notify, failureReason } from '@vanilla-bean/components';
 
 import { deleteGame } from '../../client/index.js';
 
@@ -34,7 +34,14 @@ export default class GameInfoDialog extends Dialog {
 
 					if (!sure) return;
 
-					await deleteGame(options.game.id);
+					const deleted = await deleteGame(options.game.id);
+
+					// Not gone: the dialog stays, so it can be tried again
+					if (deleted.status === 'error') {
+						new Notify({ intent: 'danger', content: `Couldn't delete ${options.game.name}: ${failureReason(deleted)}` });
+
+						return;
+					}
 				}
 
 				this.close();
