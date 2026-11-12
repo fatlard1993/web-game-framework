@@ -3,7 +3,24 @@
  * Minimal implementation using @vanilla-bean/components
  */
 import '@vanilla-bean/components/app/reloadOnBuild';
-import { Component, Button, Input, Dialog, Page } from '@vanilla-bean/components';
+import {
+	Button,
+	Card,
+	Component,
+	Content,
+	EmptyState,
+	FormDialog,
+	Notify,
+	POST,
+	Page,
+	SectionLabel,
+	Toolbar,
+	View,
+	styled,
+	theme,
+} from '@vanilla-bean/components';
+
+const { colors, fontSize, space } = theme;
 
 // App state
 const state = {
@@ -12,7 +29,8 @@ const state = {
 	playerId: null,
 	playerName: null,
 	game: null,
-	games: [],
+	games: null, // null while loading
+	gamesError: null,
 	socket: null,
 	countdownInterval: null,
 };
@@ -38,7 +56,7 @@ function send(data) {
 }
 
 function handleMessage(data) {
-	if (data.error) return alert(data.error);
+	if (data.error) return new Notify({ intent: 'danger', content: data.error });
 
 	switch (data.update) {
 		case 'playerJoined':
@@ -73,30 +91,48 @@ function handleMessage(data) {
 	}
 }
 
-// API helpers
+// API helpers: { ok, body } or { ok: false, error } with the reason, never a throw
 async function api(endpoint, options = {}) {
-	const res = await fetch(endpoint, {
-		...options,
-		headers: { 'Content-Type': 'application/json', ...options.headers },
-	});
-	return res.json();
+	try {
+		const res = await fetch(endpoint, {
+			...options,
+			headers: { 'Content-Type': 'application/json', ...options.headers },
+		});
+		const body = await res.json().catch(() => null);
+
+		return res.ok ? { ok: true, body } : { ok: false, error: body?.error || `HTTP ${res.status}` };
+	} catch (error) {
+		return { ok: false, error: error.message || 'The server could not be reached' };
+	}
 }
 
 async function loadGames() {
-	state.games = await api('/api/games');
+	state.games = null;
+	state.gamesError = null;
+	app.showView('lobby');
+
+	const result = await api('/api/games');
+
+	if (result.ok) state.games = result.body;
+	else state.gamesError = result.error;
 	app.showView('lobby');
 }
 
 async function createGame() {
-	await api('/api/games', { method: 'POST' });
+	const result = await api('/api/games', { method: 'POST' });
+
+	if (!result.ok) return new Notify({ intent: 'danger', content: `Couldn't create a game: ${result.error}` });
 	loadGames();
 }
 
+// A refused join comes back as the failed request, which the join dialog shows the reason for
 async function joinGame(gameId, playerName) {
-	const result = await api(`/api/games/${gameId}/join`, {
-		method: 'POST',
-		body: JSON.stringify({ playerName }),
-	});
+	const joined = await POST(`/api/games/${gameId}/join`, { body: { playerName } });
+
+	if (joined.status === 'error') return joined;
+
+	const result = joined.body;
+
 	state.gameId = gameId;
 	state.playerId = result.player.id;
 	state.playerName = playerName;
@@ -105,10 +141,14 @@ async function joinGame(gameId, playerName) {
 }
 
 async function refreshGame() {
-	if (state.gameId) {
-		state.game = await api(`/api/games/${state.gameId}`);
-		app.showView('game');
-	}
+	if (!state.gameId) return;
+
+	// A refresh nobody asked for: a failed one keeps what's showing
+	const result = await api(`/api/games/${state.gameId}`);
+
+	if (!result.ok) return;
+	state.game = result.body;
+	app.showView('game');
 }
 
 function leaveGame() {
@@ -121,31 +161,18 @@ function leaveGame() {
 }
 
 // Components
-class GameCard extends Component {
-	constructor(game) {
-		super({
-			style: {
-				padding: '1rem',
-				border: '1px solid #333',
-				borderRadius: '8px',
-				margin: '0.5rem 0',
-			},
-		});
+const statusColor = { waiting: colors.green, playing: colors.orange };
 
-		new Component({ tag: 'h3', textContent: game.name, style: { margin: '0 0 0.5rem' }, appendTo: this });
+class GameCard extends Card {
+	constructor(game) {
+		super({ accent: statusColor[game.status] ?? colors.gray });
+
+		new Component({ tag: 'h3', textContent: game.name, style: { margin: `0 0 ${space.sm}` }, appendTo: this });
 		new Component({
-			style: {
-				display: 'inline-block',
-				padding: '2px 8px',
-				borderRadius: '4px',
-				fontSize: '0.8rem',
-				background: game.status === 'waiting' ? '#4a5' : game.status === 'playing' ? '#fa0' : '#888', // eslint-disable-line no-nested-ternary
-				color: 'white',
-			},
-			textContent: game.status,
+			textContent: `${game.status} · Players: ${game.players.length}`,
+			style: { color: `${colors.muted}`, marginBottom: space.sm },
 			appendTo: this,
 		});
-		new Component({ tag: 'p', textContent: `Players: ${game.players.length}`, appendTo: this });
 
 		new Button({
 			textContent: game.status === 'waiting' ? 'Join' : 'Watch',
@@ -155,166 +182,172 @@ class GameCard extends Component {
 	}
 }
 
-class LobbyView extends Component {
-	constructor(options, ...children) {
-		super(
-			{
-				...options,
-				style: {
-					padding: '2rem',
-					maxWidth: '600px',
-					margin: '0 auto',
-				},
-			},
-			...children,
-		);
-	}
+// What scrolls under a view's bar, in a reading column
+const Column = styled(
+	Content,
+	() => `
+		display: flex;
+		flex-direction: column;
+		gap: ${space.md};
+		padding-block: ${space.md};
+	`,
+);
 
+class LobbyView extends View {
 	build() {
-		new Component({ tag: 'h1', textContent: 'Clicker Game', style: { textAlign: 'center' }, appendTo: this });
-
-		new Component({
-			style: { display: 'flex', gap: '1rem', margin: '1rem 0' },
+		new Toolbar({
+			variant: 'bar',
+			heading: 'Clicker Game',
 			append: [
-				new Button({ textContent: 'Create Game', onPointerPress: createGame }),
-				new Button({ textContent: 'Refresh', onPointerPress: loadGames }),
+				new Button({ textContent: 'Create game', onPointerPress: createGame }),
+				new Button({ textContent: 'Refresh', variant: 'flat', size: 'small', onPointerPress: loadGames }),
 			],
 			appendTo: this,
 		});
 
-		const list = new Component({ appendTo: this });
+		const list = new Column({ column: 600, appendTo: this });
 
-		if (state.games.length === 0) {
-			new Component({ tag: 'p', textContent: 'No games. Create one!', appendTo: list });
+		if (state.gamesError) {
+			new EmptyState({
+				icon: 'triangle-exclamation',
+				title: "Couldn't load the games",
+				message: state.gamesError,
+				action: { textContent: 'Try again', onPointerPress: loadGames },
+				appendTo: list,
+			});
+		} else if (!state.games) {
+			new EmptyState({ loading: true, appendTo: list });
+		} else if (state.games.length === 0) {
+			new EmptyState({
+				icon: 'computer-mouse',
+				title: 'No games yet',
+				message: 'Create one, and others can join it.',
+				appendTo: list,
+			});
 		} else {
-			state.games.forEach(game => (new GameCard(game).options.appendTo = list));
+			state.games.forEach(game => list.append(new GameCard(game)));
 		}
 	}
 }
 
-class GameView extends Component {
-	constructor(options, ...children) {
-		super(
-			{
-				...options,
-				style: {
-					padding: '2rem',
-					maxWidth: '600px',
-					margin: '0 auto',
-					textAlign: 'center',
-				},
-			},
-			...children,
-		);
-	}
+const Stat = styled(
+	Component,
+	() => `
+		& > :first-child {
+			font-size: ${fontSize.xs};
+			color: ${colors.muted};
+		}
 
+		& > :last-child {
+			font-size: ${fontSize.xxl};
+			font-weight: bold;
+		}
+	`,
+);
+
+const ClickButton = styled(
+	Button,
+	() => `
+		font-size: ${fontSize.xxl};
+		padding: ${space.xl} ${space.xl};
+		background-color: ${colors.green};
+		align-self: center;
+	`,
+);
+
+class GameView extends View {
 	build() {
 		const game = state.game;
 		if (!game) return;
 
-		// Header
-		new Component({
+		new Toolbar({
+			variant: 'bar',
+			heading: game.name,
 			append: [
-				new Component({ tag: 'h2', textContent: game.name }),
-				new Button({ textContent: 'Leave', onPointerPress: leaveGame }),
+				new Button({
+					icon: 'arrow-left',
+					textContent: 'Leave',
+					variant: 'flat',
+					addClass: 'start',
+					onPointerPress: leaveGame,
+				}),
 			],
 			appendTo: this,
 		});
 
+		const body = new Column({ column: 600, style: { textAlign: 'center' }, appendTo: this });
+
 		if (game.status === 'waiting') {
-			new Component({ tag: 'p', textContent: `You are: ${state.playerName}`, appendTo: this });
+			new Component({ tag: 'p', textContent: `You are: ${state.playerName}`, appendTo: body });
 			new Button({
-				textContent: 'Start Game',
+				textContent: 'Start game',
 				onPointerPress: () => send({ type: 'startGame', gameId: state.gameId }),
-				appendTo: this,
+				style: { alignSelf: 'center' },
+				appendTo: body,
 			});
 		}
 
 		if (game.status === 'playing') {
 			const statsEl = new Component({
-				style: { display: 'flex', justifyContent: 'space-around', margin: '2rem 0' },
-				appendTo: this,
-			});
-
-			const statValueStyle = { fontSize: '2rem', fontWeight: 'bold' };
-
-			const timeEl = new Component({
-				append: [
-					new Component({ textContent: 'Time', style: { fontSize: '0.8rem' } }),
-					new Component({ style: statValueStyle, textContent: '30s' }),
-				],
-				appendTo: statsEl,
+				style: { display: 'flex', justifyContent: 'space-around', margin: `${space.xl} 0` },
+				appendTo: body,
 			});
 
 			const myClicks = game.players.find(p => p.id === state.playerId)?.clicks || 0;
-			new Component({
-				append: [
-					new Component({ textContent: 'Your Clicks', style: { fontSize: '0.8rem' } }),
-					new Component({ style: statValueStyle, textContent: String(myClicks) }),
-				],
+			const timeValue = new Component({ textContent: '30s' });
+
+			new Stat({ append: [new Component({ textContent: 'Time' }), timeValue], appendTo: statsEl });
+			new Stat({
+				append: [new Component({ textContent: 'Your clicks' }), new Component({ textContent: String(myClicks) })],
+				appendTo: statsEl,
+			});
+			new Stat({
+				append: [new Component({ textContent: 'Total' }), new Component({ textContent: String(game.globalClicks) })],
 				appendTo: statsEl,
 			});
 
-			new Component({
-				append: [
-					new Component({ textContent: 'Total', style: { fontSize: '0.8rem' } }),
-					new Component({ style: statValueStyle, textContent: String(game.globalClicks) }),
-				],
-				appendTo: statsEl,
-			});
-
-			new Component({
-				tag: 'button',
-				style: {
-					fontSize: '2rem',
-					padding: '2rem 4rem',
-					cursor: 'pointer',
-					background: '#4a5',
-					border: 'none',
-					borderRadius: '12px',
-					color: 'white',
-				},
-				textContent: 'CLICK!',
+			new ClickButton({
+				textContent: 'Click!',
 				onPointerPress: () => send({ type: 'click', gameId: state.gameId, playerId: state.playerId }),
-				appendTo: this,
+				appendTo: body,
 			});
 
 			// Countdown
 			if (state.countdownInterval) clearInterval(state.countdownInterval);
 			state.countdownInterval = setInterval(() => {
 				const remaining = Math.max(0, Math.ceil((game.endTime - Date.now()) / 1000));
-				const valueEl = timeEl.elem.querySelector('div:last-child');
-				if (valueEl) valueEl.textContent = `${remaining}s`;
+				timeValue.options.textContent = `${remaining}s`;
 			}, 100);
 		}
 
 		if (game.status === 'finished') {
 			const winner = game.winner;
 			new Component({
-				style: { fontSize: '3rem', margin: '2rem 0' },
-				textContent: winner ? (winner.id === state.playerId ? 'You Won!' : `${winner.name} Won!`) : 'No Winner', // eslint-disable-line no-nested-ternary
-				appendTo: this,
+				tag: 'h2',
+				textContent: winner ? (winner.id === state.playerId ? 'You won!' : `${winner.name} won!`) : 'No winner', // eslint-disable-line no-nested-ternary
+				appendTo: body,
 			});
 
 			new Component({
 				tag: 'p',
 				textContent: `Total clicks: ${game.globalClicks}`,
-				appendTo: this,
+				appendTo: body,
 			});
 
 			new Button({
-				textContent: 'Play Again',
+				textContent: 'Play again',
 				onPointerPress: () => send({ type: 'resetGame', gameId: state.gameId }),
-				appendTo: this,
+				style: { alignSelf: 'center' },
+				appendTo: body,
 			});
 		}
 
 		// Players list
 		const playersEl = new Component({
-			style: { marginTop: '2rem', textAlign: 'left' },
-			appendTo: this,
+			style: { marginTop: space.xl, textAlign: 'left' },
+			appendTo: body,
 		});
-		new Component({ tag: 'h3', textContent: 'Players', appendTo: playersEl });
+		new SectionLabel({ textContent: 'Players', appendTo: playersEl });
 
 		game.players.forEach(player => {
 			const isYou = player.id === state.playerId;
@@ -322,9 +355,9 @@ class GameView extends Component {
 				style: {
 					display: 'flex',
 					justifyContent: 'space-between',
-					padding: '0.5rem',
-					borderBottom: '1px solid #333',
-					background: isYou ? 'rgba(74, 170, 85, 0.2)' : 'transparent',
+					padding: space.sm,
+					borderBottom: `1px solid ${colors.border}`,
+					background: isYou ? `${colors.alpha(colors.green, 0.2)}` : 'transparent',
 				},
 				append: [
 					new Component({ tag: 'span', textContent: player.name + (isYou ? ' (You)' : '') }),
@@ -336,43 +369,21 @@ class GameView extends Component {
 	}
 }
 
-// Join dialog
+// Join dialog: a refused join shows why inside it, and it stays open
 let joinDialog = null;
 function showJoinDialog(gameId) {
 	joinDialog?.destroy();
 
-	let nameInput;
-	joinDialog = new Dialog({
-		header: 'Join Game',
-		append: [
-			(nameInput = new Input({
-				placeholder: 'Your name',
-				onKeydown: e => {
-					if (e.key === 'Enter' && nameInput.elem.value) {
-						joinGame(gameId, nameInput.elem.value);
-						joinDialog.close();
-					}
-				},
-			})),
-			new Button({
-				textContent: 'Join',
-				onPointerPress: () => {
-					if (nameInput.elem.value) {
-						joinGame(gameId, nameInput.elem.value);
-						joinDialog.close();
-					}
-				},
-			}),
-		],
-		appendTo: document.body,
+	joinDialog = new FormDialog({
+		header: 'Join game',
+		inputs: [{ key: 'name', label: 'Your name', validate: value => (value ? null : 'Required') }],
+		saveLabel: 'Join',
+		onSave: ({ name }) => joinGame(gameId, name),
 	});
-
-	joinDialog.open();
-	setTimeout(() => nameInput.elem.focus(), 100);
 }
 
 // Main app
-class ClickerApp extends Component {
+class ClickerApp extends View {
 	showView(view) {
 		this.empty();
 		if (view === 'lobby') {
