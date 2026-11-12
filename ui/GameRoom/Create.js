@@ -22,7 +22,7 @@ export default class Create extends View {
 					heading: options.toolbar?.heading || 'New Game',
 					left: [
 						new Link({
-							textContent: options.toolbar?.backText || 'Back to Hub',
+							textContent: options.toolbar?.backText || 'Back to the hub',
 							href: options.toolbar?.backHref || '#/hub',
 							icon: 'arrow-left',
 							variant: 'flat',
@@ -31,7 +31,7 @@ export default class Create extends View {
 					],
 					right: [
 						new Button({
-							textContent: options.toolbar?.createText || 'Create Game',
+							textContent: options.toolbar?.createText || 'Create game',
 							onPointerPress: () => this.create(),
 						}),
 					],

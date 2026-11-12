@@ -25,7 +25,7 @@ export default class Join extends View {
 					heading: options.toolbar?.heading || 'Join Game',
 					left: [
 						new Link({
-							content: options.toolbar?.backText || 'Back to Hub',
+							content: options.toolbar?.backText || 'Back to the hub',
 							href: options.toolbar?.backHref || '#/hub',
 							icon: 'arrow-left',
 							variant: 'flat',

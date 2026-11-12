@@ -41,7 +41,7 @@ export default class GameInfoPopover extends (styled.Popover`
 
 		this.options.infoRows(game).forEach(content => new Component({ content, appendTo: this }));
 		new Button({
-			content: 'More',
+			content: 'Show details',
 			appendTo: this,
 			style: { display: 'block', margin: '6px auto' },
 			onPointerPress: () => {

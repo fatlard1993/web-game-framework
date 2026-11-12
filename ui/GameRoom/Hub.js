@@ -29,7 +29,7 @@ export default class Hub extends View {
 					left: options.toolbar?.left || [],
 					right: [
 						new Link({
-							textContent: options.toolbar?.createText || 'New Game',
+							textContent: options.toolbar?.createText || 'Create a game',
 							href: options.toolbar?.createHref || '#/create',
 							variant: 'button',
 							tooltip: false,
@@ -127,7 +127,7 @@ export default class Hub extends View {
 				append: [
 					new GameListText({ content: name }),
 					new Button({
-						content: this.options.buttons?.linkText || 'Copy Link',
+						content: this.options.buttons?.linkText || 'Copy link',
 						variant: 'flat',
 						onPointerPress: async event => {
 							event.stopPropagation();
@@ -145,7 +145,7 @@ export default class Hub extends View {
 						},
 					}),
 					new Button({
-						content: this.options.buttons?.infoText || 'Info',
+						content: this.options.buttons?.infoText || 'Show info',
 						variant: 'flat',
 						onPointerPress: event => {
 							event.stopPropagation();

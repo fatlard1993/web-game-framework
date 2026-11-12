@@ -52,7 +52,7 @@ describe('Hub', () => {
 		hub = new Hub({ appendTo: container, watch: false });
 
 		await screen.findByRole('link', { name: 'Join' });
-		expect(screen.getAllByRole('link').map(link => link.textContent)).toEqual(['New Game', 'Join']);
+		expect(screen.getAllByRole('link').map(link => link.textContent)).toEqual(['Create a game', 'Join']);
 	});
 
 	test('lists the games in a reading column', async () => {
