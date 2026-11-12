@@ -34,22 +34,22 @@ export class GameList extends styled(
 		padding: ${space.sm} 0;
 		overflow: visible;
 
-		& > li {
-			list-style: none;
-			text-indent: 0;
+		/* Over noStyle's tight line, which is for one-line items */
+		&.no-style > li {
 			line-height: normal;
 		}
 	`,
 ) {
 	static schema = {
+		noStyle: { default: true },
 		ListItemComponent: { default: GameListItem },
 	};
 }
 
 export const GameListText = styled(
 	Component,
-	({ space, media }) => `
-		font-size: 1.2em;
+	({ space, media, fontSize }) => `
+		font-size: ${fontSize.xl};
 		line-height: 1.6;
 		padding: 0 ${space.xs};
 		pointer-events: none;
