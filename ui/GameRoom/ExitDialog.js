@@ -25,7 +25,7 @@ export default class ExitDialog extends Dialog {
 	constructor(options = {}) {
 		super({
 			size: 'fit',
-			header: 'Exiting',
+			header: 'Exit this game?',
 			buttons: ['Cancel', options.confirmLabel ?? ExitDialog.schema.confirmLabel.default],
 			onButtonPress: async ({ button, closeDialog }) => {
 				if (button === this.options.confirmLabel) await this.exit();

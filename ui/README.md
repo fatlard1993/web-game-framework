@@ -87,7 +87,7 @@ Each component accepts options for customization:
 - `formInputs` - Form field configuration
 - `containerComponent` - Custom wrapper
 
-**ExitDialog.js** (a `Dialog`; `header` defaults to "Exiting"):
+**ExitDialog.js** (a `Dialog`; `header` defaults to "Exit this game?"):
 
 - `gameId`, `playerId` - Whose exit to send (`POST /games/:gameId/:playerId/exit`); without both, read from `gameContext`
 - `label` - The "Remove me from the game" checkbox, ticked to start

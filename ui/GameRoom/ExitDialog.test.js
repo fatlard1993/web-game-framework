@@ -29,9 +29,10 @@ describe('ExitDialog', () => {
 		dialog = null;
 	});
 
-	test('asks with the removal ticked, the confirming button second', async () => {
+	test('asks the question, with the removal ticked, the confirming button second', async () => {
 		await open();
 
+		expect(screen.getByRole('dialog', { name: 'Exit this game?' })).toBeInTheDocument();
 		expect(screen.getByRole('checkbox', { name: 'Remove me from the game' })).toBeChecked();
 		expect(screen.getAllByRole('button').map(button => button.textContent)).toEqual(['Cancel', 'Exit']);
 	});
