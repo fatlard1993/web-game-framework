@@ -49,7 +49,7 @@ const Avatar = styled(
 		font-size: 2.4rem;
 		background: ${colors.alpha(colors.white, 0.08)};
 
-		&.picked {
+		&[aria-pressed='true'] {
 			background: ${colors.blue};
 			transform: scale(1.1);
 		}
@@ -89,11 +89,11 @@ export default class Start extends View {
 			avatar =>
 				new Avatar({
 					textContent: avatar,
-					addClass: avatar === picked ? 'picked' : '',
+					pressed: avatar === picked,
 					appendTo: avatars,
 					onPointerPress: () => {
 						picked = avatar;
-						for (const button of buttons) button.elem.classList.toggle('picked', button.elem.textContent === avatar);
+						buttons.forEach((button, index) => (button.options.pressed = AVATARS[index] === avatar));
 					},
 				}),
 		);
