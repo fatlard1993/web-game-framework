@@ -27,7 +27,9 @@ export default class Join extends View {
 						new Link({
 							content: options.toolbar?.backText || 'Back to Hub',
 							href: options.toolbar?.backHref || '#/hub',
-							variant: 'button',
+							icon: 'arrow-left',
+							variant: 'flat',
+							tooltip: false,
 						}),
 					],
 					right: [

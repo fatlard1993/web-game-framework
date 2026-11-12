@@ -24,7 +24,9 @@ export default class Create extends View {
 						new Link({
 							textContent: options.toolbar?.backText || 'Back to Hub',
 							href: options.toolbar?.backHref || '#/hub',
-							variant: 'button',
+							icon: 'arrow-left',
+							variant: 'flat',
+							tooltip: false,
 						}),
 					],
 					right: [

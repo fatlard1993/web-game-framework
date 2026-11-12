@@ -93,4 +93,15 @@ describe('Hub', () => {
 		await screen.findByText('No games yet');
 		expect(screen.getByText('No games found. Create one to get started!')).toBeInTheDocument();
 	});
+
+	test("a row's one filled control is Join; its links are nav, without a link tooltip", async () => {
+		hub = new Hub({ appendTo: container });
+
+		const join = await screen.findByRole('link', { name: 'Join' });
+
+		expect(join).not.toHaveClass('variant-flat');
+		expect(screen.getByRole('link', { name: 'Watch' })).toHaveClass('variant-flat');
+		for (const button of screen.getAllByRole('button')) expect(button).toHaveClass('variant-flat');
+		for (const link of screen.getAllByRole('link')) expect(link).not.toHaveClass('has-tooltip');
+	});
 });

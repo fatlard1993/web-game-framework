@@ -35,7 +35,7 @@ export default class Play extends View {
 				...options,
 				toolbar: {
 					heading: '',
-					left: [new Link({ textContent: '🏠', href: '#/', variant: 'button' }), scores],
+					left: [new Link({ textContent: '🏠', href: '#/', variant: 'button', tooltip: false }), scores],
 					right: [
 						new SoundToggle({ sound }),
 						new Button({ textContent: '➕👫', title: 'Someone else joins', onPointerPress: () => this.invite() }),

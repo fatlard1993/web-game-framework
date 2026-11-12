@@ -32,6 +32,7 @@ export default class Hub extends View {
 							textContent: options.toolbar?.createText || 'New Game',
 							href: options.toolbar?.createHref || '#/create',
 							variant: 'button',
+							tooltip: false,
 						}),
 					],
 				},
@@ -127,6 +128,7 @@ export default class Hub extends View {
 					new GameListText({ content: name }),
 					new Button({
 						content: this.options.buttons?.linkText || 'Copy Link',
+						variant: 'flat',
 						onPointerPress: async event => {
 							event.stopPropagation();
 
@@ -144,6 +146,7 @@ export default class Hub extends View {
 					}),
 					new Button({
 						content: this.options.buttons?.infoText || 'Info',
+						variant: 'flat',
 						onPointerPress: event => {
 							event.stopPropagation();
 
@@ -165,12 +168,14 @@ export default class Hub extends View {
 						content: this.options.buttons?.joinText || 'Join',
 						href: `#/join/${id}`,
 						variant: 'button',
+						tooltip: false,
 					}),
 					this.options.watch &&
 						new Link({
 							content: this.options.buttons?.watchText || 'Watch',
 							href: `#/watch/${id}`,
-							variant: 'button',
+							variant: 'flat',
+							tooltip: false,
 						}),
 					new GameListText({ content: `${players.length}` }),
 				].filter(Boolean),
