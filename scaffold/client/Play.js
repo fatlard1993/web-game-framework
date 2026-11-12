@@ -6,10 +6,10 @@ import { FIELD } from '../rules.js';
 
 const Scores = styled(
 	Component,
-	({ space }) => `
+	({ space, fontSize }) => `
 		display: flex;
 		gap: ${space.md};
-		font-size: 1.4rem;
+		font-size: ${fontSize.xxl};
 		white-space: nowrap;
 		overflow: hidden;
 
@@ -156,14 +156,14 @@ export default class Play extends View {
 		}
 
 		this.scores.elem.replaceChildren(
-			...here.map(player => {
-				const score = document.createElement('span');
-
-				score.textContent = `${player.name} ${view.state.scores[player.id] ?? 0}`;
-				if (player.id === this.playerId) score.className = 'me';
-
-				return score;
-			}),
+			...here.map(
+				player =>
+					new Component({
+						tag: 'span',
+						textContent: `${player.name} ${view.state.scores[player.id] ?? 0}`,
+						addClass: player.id === this.playerId ? 'me' : '',
+					}).elem,
+			),
 		);
 	}
 
