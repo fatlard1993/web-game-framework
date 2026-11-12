@@ -13,7 +13,7 @@ import QRCode from './QRCode.js';
  */
 export default class JoinCard extends styled(
 	Component,
-	({ space, colors }) => `
+	({ space, colors, fontSize }) => `
 		display: flex;
 		flex-direction: column;
 		align-items: center;
@@ -25,8 +25,8 @@ export default class JoinCard extends styled(
 		}
 
 		& .address {
-			font-size: 0.85em;
-			opacity: 0.75;
+			font-size: ${fontSize.sm};
+			color: ${colors.muted};
 			word-break: break-all;
 			text-align: center;
 		}
@@ -38,11 +38,8 @@ export default class JoinCard extends styled(
 		super.build?.();
 
 		const url = await joinUrl(this.options.gameId);
-		const address = document.createElement('div');
 
-		address.className = 'address';
-		address.textContent = url;
 		new QRCode({ src: url, qrCodeConfig: { width: this.options.size, margin: 2 }, appendTo: this.elem });
-		this.elem.append(address);
+		new Component({ addClass: 'address', textContent: url, appendTo: this });
 	}
 }
