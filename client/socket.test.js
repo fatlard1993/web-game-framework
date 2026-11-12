@@ -35,7 +35,9 @@ beforeAll(async () => {
 	jest.spyOn(console, 'log').mockImplementation(() => {});
 	jest.spyOn(console, 'error').mockImplementation(() => {});
 	jest.useFakeTimers();
-	({ default: socket } = await import('./socket.js'));
+	// A socket of its own, made with FakeSocket, whichever test file loaded socket.js first
+	// eslint-disable-next-line import/no-unresolved
+	({ default: socket } = await import('./socket.js?fresh'));
 });
 
 afterAll(() => {

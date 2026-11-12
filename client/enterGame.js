@@ -1,3 +1,5 @@
+import { Notify, failureReason } from '@vanilla-bean/components';
+
 import { getGame } from './api.js';
 import gameContext from './gameContext.js';
 import socket, { announce, onMessage } from './socket.js';
@@ -18,6 +20,8 @@ import socket, { announce, onMessage } from './socket.js';
  * @param {Function} [options.onUpdate] - (message) for the game's other broadcasts (presence, a custom update)
  * @param {Function} [options.notMember] - This browser isn't a player in it (and isn't watching): where to go instead
  * @param {Function} [options.gone] - The game doesn't exist (or was deleted while open)
+ * @param {Function} [options.failed] - (reason, result) the game couldn't be loaded (the server unreachable or
+ * failing): not a sign it's gone. Without one, a danger toast says why
  * @param {boolean} [options.watch] - Watch it rather than play
  * @param {string} [options.playerId] - Who this browser is in it (default: what joining kept, localStorage[gameId])
  * @returns {Promise<{ game?: object, playerId?: string, leave: Function }>} The game as first fetched, who this page
@@ -25,13 +29,23 @@ import socket, { announce, onMessage } from './socket.js';
  */
 const enterGame = async (
 	gameId,
-	{ onState, onUpdate, notMember, gone, watch = false, playerId = localStorage.getItem(gameId) } = {},
+	{ onState, onUpdate, notMember, gone, failed, watch = false, playerId = localStorage.getItem(gameId) } = {},
 ) => {
 	const nothing = { leave: () => {} };
-	const { body: game, response } = await getGame(gameId, { invalidateAfter: 0 });
+	const fetched = await getGame(gameId, { invalidateAfter: 0 });
+	const { body: game, response } = fetched;
 
-	if (response?.status === 404 || !game) {
+	// Only the server saying so means the game is gone; an unreachable or failing server doesn't
+	if (response?.status === 404) {
 		gone?.();
+
+		return nothing;
+	}
+	if (fetched.status === 'error' || !game) {
+		const reason = failureReason(fetched) || 'No game came back';
+
+		if (failed) failed(reason, fetched);
+		else new Notify({ intent: 'danger', content: `Couldn't load the game: ${reason}` });
 
 		return nothing;
 	}
