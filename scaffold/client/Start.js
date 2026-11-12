@@ -115,7 +115,7 @@ export default class Start extends View {
 				} catch (error) {
 					// Said where it happened, in a picture and two words, and kept for whoever looks at the console
 					console.error('Could not start playing', error);
-					new Notify({ x: window.innerWidth / 2, y: 120, intent: 'warning', content: '😕 Try again', timeout: 3000 });
+					new Notify({ x: window.innerWidth / 2, y: 120, intent: 'danger', content: '😕 Try again', timeout: 3000 });
 				}
 			},
 		});
