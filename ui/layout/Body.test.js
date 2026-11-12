@@ -1,3 +1,5 @@
+import { Content } from '@vanilla-bean/components';
+
 import Body from './Body.js';
 
 // The generated scoped styles land in a <style> in head; a Body's own rule set is the one naming its class
@@ -11,10 +13,22 @@ describe('Body', () => {
 		Body.backgroundImage = null;
 	});
 
+	test('is a Content, which does the scrolling', () => {
+		const body = new Body({ appendTo: document.body });
+
+		expect(body).toBeInstanceOf(Content);
+		expect(stylesOf(body)).not.toMatch(/overflow(-y)?: (hidden )?auto/);
+	});
+
+	test("takes a Content's column", () => {
+		const body = new Body({ column: true, appendTo: document.body });
+
+		expect(body.elem).toHaveClass('column');
+	});
+
 	test('has no background unless one is set', () => {
 		const body = new Body({ appendTo: document.body });
 
-		expect(stylesOf(body)).toContain('overflow: hidden auto');
 		expect(stylesOf(body)).not.toContain('background-image: url(');
 	});
 
@@ -25,7 +39,6 @@ describe('Body', () => {
 		const plain = new Body({ backgroundImage: false, appendTo: document.body });
 
 		expect(stylesOf(withGameBackground)).toContain("url('img/starfield.svg')");
-		expect(stylesOf(plain)).toContain('overflow: hidden auto');
 		expect(stylesOf(plain)).not.toContain('background-image: url(');
 	});
 });

@@ -1,6 +1,7 @@
-import { Component } from '@vanilla-bean/components';
+import { Content } from '@vanilla-bean/components';
 
-export default class Body extends Component {
+/** What scrolls in a View, under its Toolbar: a Content, with a game's background behind it if one is set */
+export default class Body extends Content {
 	/** The parallax background every Body gets unless it passes its own; none until a game sets one at startup */
 	static backgroundImage = null;
 
@@ -16,9 +17,8 @@ export default class Body extends Component {
 			{
 				...options,
 				styles: () => `
-					overflow: hidden auto;
-					flex: 1;
-					min-height: 0;
+					/* Content scrolls; sideways it clips, so the background's drift never adds a scrollbar */
+					overflow-x: hidden;
 					position: relative;
 					/* A column, so a game's own view can take the whole of it (flex: 1) */
 					display: flex;
