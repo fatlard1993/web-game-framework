@@ -27,7 +27,9 @@ Read these before building anything the framework or the component library might
 
 ## Who plays it
 
-Anyone, including people who don't read: every control is a picture (an emoji) with few or no words, big enough for a thumb, and the game explains itself by being played, not by text. Keep it that way as the game grows: a new thing to do is a new big picture to tap, a new thing to see is drawn, not described.
+Anyone, including people who don't read: by default every control is a picture (an emoji) with few or no words, big enough for a thumb, and the game explains itself by being played, not by text. Keep it that way as the game grows: a new thing to do is a new big picture to tap, a new thing to see is drawn, not described. A game whose idea is words (players write the rhymes, guess the word, type the answer) takes words where the idea needs them, the way the game it's like does; pictures stay for everything else.
+
+Often one person tries it first, alone. Alone, it says what it's waiting for (👥 1/2) and offers what they can do meanwhile: invite someone (the ➕👫 `JoinCard`), or play or practice on their own when the game can be played that way.
 
 ## How this project is written
 
@@ -35,6 +37,7 @@ Anyone, including people who don't read: every control is a picture (an emoji) w
 - The truth of a game lives in its `Game` on the server. A page never changes what it shows on its own: it calls `act(name, data)` and draws the view that comes back, so every player sees the same thing. Never trust a player id a page sends; the action already knows its player.
 - A new thing a player can do is a new entry in `actions`, new state in `state`, and `draw` showing it. A rule both sides need goes in `rules.js`.
 - One file per view, each small.
+- A component's own lifecycle names are the library's: don't give a view a method called `render` (the library calls it to build and attach the component, so yours runs in its place), and read a component's `.lld.md` before naming fields on it.
 - A change that can be seen is checked by looking: the page reloads itself on every save.
 
 ## What makes it feel good
