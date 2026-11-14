@@ -105,7 +105,8 @@ export default class Start extends View {
 			appendTo: screen,
 			onPointerPress: async () => {
 				try {
-					const found = game ?? (await createGame({ body: { name: GAME_NAME } })).body;
+					// Looked for again: someone may have made it since this screen opened, and there is only one game
+					const found = (await everyonesGame()) ?? (await createGame({ body: { name: GAME_NAME } })).body;
 					const joined = await joinGame(found.id, { body: { name: picked } });
 
 					if (!joined.body?.id) throw new Error(`could not join: ${JSON.stringify(joined.body)}`);
