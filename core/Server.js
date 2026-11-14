@@ -49,6 +49,19 @@ const ownSaves = live => {
 	return own;
 };
 
+// The same working copy builds its page into GAME_BUILD, so the live copy's page (client/build, built when it's
+// hosted) is never swapped for one its older server doesn't match: the working copy serves from there too
+const ownBuild = (build, statics) => {
+	const own = process.env.GAME_BUILD;
+
+	if (!own) return { build, statics };
+
+	return {
+		build: { ...build, outdir: own },
+		statics: statics && (statics.root ? statics : { ...statics, root: own }),
+	};
+};
+
 export default class Server {
 	/** How long a closed page's player stays here, for a reload to come back within */
 	static LEFT_AFTER_MS = 5000;
@@ -100,7 +113,7 @@ export default class Server {
 		if (port === 'auto') port = autoPort();
 		this.requestedPort = port;
 		// Built-in files (the client's build) for what the router leaves: true for client/build, or serveStatic's options
-		this.statics = statics === true ? {} : statics;
+		({ build, statics: this.statics } = ownBuild(build, statics === true ? {} : statics));
 		this.status = status;
 
 		this.logger = logger || consoleLogger({ verbosity });

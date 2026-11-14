@@ -68,6 +68,19 @@ describe('Server database option', () => {
 		}
 	});
 
+	test('a working copy named in GAME_BUILD builds its page there and serves it from there', () => {
+		process.env.GAME_BUILD = '/tmp/working-build';
+		try {
+			server = new Server({ port: 0, exit: false, static: true, logger: quietLogger });
+			expect(server.statics).toEqual({ root: '/tmp/working-build' });
+
+			server = new Server({ port: 0, exit: false, static: { root: 'mine' }, logger: quietLogger });
+			expect(server.statics).toEqual({ root: 'mine' });
+		} finally {
+			delete process.env.GAME_BUILD;
+		}
+	});
+
 	test('throws on a database option that is neither instance nor string', () => {
 		expect(() => new Server({ port: 0, exit: false, database: 42, logger: quietLogger })).toThrow(
 			'Database instance or a file path',
