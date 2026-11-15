@@ -1,4 +1,4 @@
-import { Component, Button, Notify, failureReason, styled } from '@vanilla-bean/components';
+import { Component, Button, Notify, failureReason, styled, theme } from '@vanilla-bean/components';
 
 import { getGame } from '../../client/index.js';
 import GameInfoDialog from './GameInfoDialog.js';
@@ -43,7 +43,7 @@ export default class GameInfoPopover extends (styled.Popover`
 		new Button({
 			content: 'Show details',
 			appendTo: this,
-			style: { display: 'block', margin: '6px auto' },
+			style: { display: 'block', margin: `${theme.space.sm} auto` },
 			onPointerPress: () => {
 				this.destroy();
 

@@ -72,8 +72,8 @@ export const GameListText = styled(
 			&:last-of-type {
 				order: -1;
 				position: absolute;
-				top: 10px;
-				right: 12px;
+				top: ${space.md};
+				right: ${space.md};
 			}
 		}
 	`,

@@ -13,14 +13,14 @@ import QRCode from './QRCode.js';
  */
 export default class JoinCard extends styled(
 	Component,
-	({ space, colors, fontSize }) => `
+	({ space, radius, colors, fontSize }) => `
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		gap: ${space.sm};
 
 		& canvas {
-			border-radius: 8px;
+			border-radius: ${radius.lg};
 			background: ${colors.white};
 		}
 
