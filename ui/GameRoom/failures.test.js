@@ -1,5 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
+import { resetRequest } from '@vanilla-bean/components';
 
 // The lobby's pieces load the game socket; this one never connects
 class QuietSocket extends EventTarget {
@@ -13,6 +14,7 @@ describe('a refused request in the lobby', () => {
 	let Create;
 	let GameInfoDialog;
 	let GameInfoPopover;
+	let Join;
 	let made;
 	let fetchSpy;
 
@@ -24,6 +26,7 @@ describe('a refused request in the lobby', () => {
 		({ default: Create } = await import('./Create.js'));
 		({ default: GameInfoDialog } = await import('./GameInfoDialog.js'));
 		({ default: GameInfoPopover } = await import('./GameInfoPopover.js'));
+		({ default: Join } = await import('./Join.js'));
 	});
 
 	afterAll(() => {
@@ -31,6 +34,8 @@ describe('a refused request in the lobby', () => {
 	});
 
 	beforeEach(() => {
+		// Each test answers its own way, not from the last one's cache
+		resetRequest();
 		window.location.hash = '#/start';
 	});
 
@@ -69,5 +74,28 @@ describe('a refused request in the lobby', () => {
 
 		await screen.findByText("Couldn't load the game: Game not found");
 		expect(made.elem.isConnected).toBe(false);
+	});
+
+	test("a game that can't be looked up to join says why, and goes to the hub", async () => {
+		refuse(404, { error: 'Game not found' });
+		made = new Join({ gameId: 'g1', appendTo: container });
+
+		await screen.findByText("Couldn't load the game: Game not found");
+		expect(window.location.hash).toBe('#/hub');
+	});
+
+	test("a refused join says why, and doesn't go anywhere", async () => {
+		fetchSpy = spyOn(globalThis, 'fetch').mockImplementation(async (url, { method } = {}) =>
+			method === 'POST'
+				? Response.json({ error: 'That name is taken' }, { status: 400 })
+				: Response.json({ id: 'g1', name: 'Test Game', players: [] }),
+		);
+		made = new Join({ gameId: 'g1', appendTo: container });
+		await screen.findByRole('textbox', { name: 'Player Name' });
+
+		await userEvent.click(screen.getByRole('button', { name: 'Join' }));
+
+		await screen.findByText("Couldn't join the game: That name is taken");
+		expect(window.location.hash).toBe('#/start');
 	});
 });

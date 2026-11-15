@@ -1,4 +1,4 @@
-import { Link, Button, Notify, Form, theme } from '@vanilla-bean/components';
+import { Link, Button, Notify, Form, failureReason, theme } from '@vanilla-bean/components';
 
 import { View } from '../layout/index.js';
 import { getGame, joinGame } from '../../client/index.js';
@@ -43,10 +43,7 @@ export default class Join extends View {
 								});
 
 								if (join.status !== 'success') {
-									return new Notify({
-										intent: 'danger',
-										content: join.body?.message || join.body?.error || String(join.body),
-									});
+									return new Notify({ intent: 'danger', content: `Couldn't join the game: ${failureReason(join)}` });
 								}
 
 								localStorage.setItem(this.options.gameId, join.body.id);
@@ -74,7 +71,7 @@ export default class Join extends View {
 		const game = await getGame(this.options.gameId);
 
 		if (game.response.status !== 200) {
-			new Notify({ intent: 'danger', content: game.body?.message || game.response.statusText });
+			new Notify({ intent: 'danger', content: `Couldn't load the game: ${failureReason(game)}` });
 
 			localStorage.removeItem(this.options.gameId);
 

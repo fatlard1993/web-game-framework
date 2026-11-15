@@ -61,7 +61,8 @@ export default class ExitDialog extends Dialog {
 			const { gameId, playerId } = this.options;
 			const result = await exitGame(gameId && playerId ? { urlParameters: { gameId, playerId } } : {});
 
-			if (result.status === 'error') new Notify({ intent: 'danger', content: failureReason(result) });
+			if (result.status === 'error')
+				new Notify({ intent: 'danger', content: `Couldn't remove you from the game: ${failureReason(result)}` });
 		}
 
 		await this.options.onExit?.();

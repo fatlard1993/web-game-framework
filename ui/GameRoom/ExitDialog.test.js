@@ -61,14 +61,16 @@ describe('ExitDialog', () => {
 		expect(fetchSpy).not.toHaveBeenCalled();
 	});
 
-	test("a failed removal says the server's reason, and the player still leaves", async () => {
+	test("a failed removal says what failed and the server's reason, and the player still leaves", async () => {
 		respond(500, { error: 'Game not found' });
 		await open();
 
 		await userEvent.click(screen.getByRole('button', { name: 'Exit' }));
 
 		await waitFor(() => expect(window.location.hash).toBe('#/hub'));
-		expect(screen.getByRole('alert', { hidden: true })).toHaveTextContent('Game not found');
+		expect(screen.getByRole('alert', { hidden: true })).toHaveTextContent(
+			"Couldn't remove you from the game: Game not found",
+		);
 	});
 
 	test('cancel stays', async () => {
