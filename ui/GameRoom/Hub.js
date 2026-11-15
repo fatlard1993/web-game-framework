@@ -39,14 +39,6 @@ export default class Hub extends View {
 			},
 			...children,
 		);
-
-		// A press anywhere else dismisses the popover; the list's buttons stop their press from reaching here
-		this.options.onPointerPress = () => {
-			if (this.gamePopover) {
-				this.gamePopover.destroy();
-				this.gamePopover = null;
-			}
-		};
 	}
 
 	build() {
@@ -66,6 +58,11 @@ export default class Hub extends View {
 		const games = await getGames();
 
 		this._body.empty();
+
+		// Each game's info popover, made the first time its button is pressed; gone with the list it was opened from
+		const popovers = new Map();
+
+		this.replaceCleanup('gamePopovers', () => popovers.forEach(popover => popover.destroy()));
 
 		if (games.status === 'error') {
 			this._listed = false;
@@ -129,9 +126,7 @@ export default class Hub extends View {
 					new Button({
 						content: this.options.buttons?.linkText || 'Copy link',
 						variant: 'flat',
-						onPointerPress: async event => {
-							event.stopPropagation();
-
+						onPointerPress: async () => {
 							// An address a phone on the network can open, not localhost
 							copyToClipboard(await joinUrl(id));
 
@@ -142,21 +137,24 @@ export default class Hub extends View {
 					new Button({
 						content: this.options.buttons?.infoText || 'Show info',
 						variant: 'flat',
-						onPointerPress: event => {
-							event.stopPropagation();
+						onPointerPress: async ({ currentTarget }) => {
+							let popover = popovers.get(id);
 
-							// One that destroyed itself (its game couldn't be loaded) is off the page: open another
-							if (this.gamePopover?.elem.isConnected) {
-								this.gamePopover.destroy();
-								this.gamePopover = null;
-							} else {
-								this.gamePopover = new GameInfoPopover({
-									x: event.clientX,
-									y: event.clientY,
+							// One that destroyed itself (its game couldn't be loaded) is off the page: make another
+							if (!popover?.elem.isConnected) {
+								popover = new GameInfoPopover({
 									gameId: id,
+									autoOpen: false,
+									// A press anywhere else closes it, another game's Show info among them
+									outsideClose: true,
 									...this.options.popoverOptions,
 								});
+								popovers.set(id, popover);
 							}
+
+							// Under its button, which toggles it, once its game is in: placed empty, it would grow past the room it was given
+							await popover.loaded;
+							popover.open({ anchor: currentTarget });
 						},
 					}),
 					new Link({

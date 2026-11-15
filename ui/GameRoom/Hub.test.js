@@ -105,6 +105,105 @@ describe('Hub', () => {
 		for (const link of screen.getAllByRole('link')) expect(link).not.toHaveClass('has-tooltip');
 	});
 
+	describe('Show info', () => {
+		const games = [
+			{ id: 'g1', name: 'First Game', players: [] },
+			{ id: 'g2', name: 'Second Game', players: [] },
+		];
+
+		beforeEach(() => {
+			fetchSpy.mockImplementation(async url => {
+				const id = String(url).match(/\/games\/(\w+)/)?.[1];
+
+				return Response.json(id ? games.find(game => game.id === id) : games);
+			});
+		});
+
+		// The popover is on the body, out of the hub, with no role to find it by: it's the row's parent. The test DOM shows
+		// and hides a popover by its display
+		// eslint-disable-next-line testing-library/no-node-access
+		const infoOf = async name => (await screen.findByText(`Game: ${name}`)).parentElement;
+		const isShown = popover => popover.style.display === 'block';
+
+		test("hangs the game's info under its button, which closes it again", async () => {
+			hub = new Hub({ appendTo: container });
+
+			const [button] = await screen.findAllByRole('button', { name: 'Show info' });
+			await userEvent.click(button);
+
+			const info = await infoOf('First Game');
+
+			expect(isShown(info)).toBe(true);
+			expect(button).toHaveAttribute('aria-haspopup', 'dialog');
+			expect(button).toHaveAttribute('aria-expanded', 'true');
+
+			await userEvent.click(button);
+
+			expect(isShown(info)).toBe(false);
+			expect(button).toHaveAttribute('aria-expanded', 'false');
+		});
+
+		test("another game's button closes the open one and shows its own game", async () => {
+			hub = new Hub({ appendTo: container });
+
+			const [first, second] = await screen.findAllByRole('button', { name: 'Show info' });
+			await userEvent.click(first);
+			const firstInfo = await infoOf('First Game');
+
+			await userEvent.click(second);
+			const secondInfo = await infoOf('Second Game');
+
+			await waitFor(() => expect(isShown(firstInfo)).toBe(false));
+			expect(isShown(secondInfo)).toBe(true);
+			expect(first).toHaveAttribute('aria-expanded', 'false');
+			expect(second).toHaveAttribute('aria-expanded', 'true');
+		});
+
+		test("opens once its game is in, so it's placed at its size", async () => {
+			let answer;
+			const listed = fetchSpy.getMockImplementation();
+			fetchSpy.mockImplementation(url =>
+				String(url).includes('/games/') ? new Promise(resolve => (answer = resolve)) : listed(url),
+			);
+			hub = new Hub({ appendTo: container });
+
+			const [button] = await screen.findAllByRole('button', { name: 'Show info' });
+			await userEvent.click(button);
+
+			expect(button).not.toHaveAttribute('aria-expanded');
+
+			answer(Response.json(games[0]));
+
+			await waitFor(() => expect(button).toHaveAttribute('aria-expanded', 'true'));
+			expect(isShown(await infoOf('First Game'))).toBe(true);
+		});
+
+		test('a press elsewhere closes it', async () => {
+			hub = new Hub({ appendTo: container });
+
+			await userEvent.click((await screen.findAllByRole('button', { name: 'Show info' }))[0]);
+			const info = await infoOf('First Game');
+
+			// The press that opened it is let through first, a frame on
+			await new Promise(resolve => requestAnimationFrame(resolve));
+			await userEvent.click(document.body);
+
+			await waitFor(() => expect(isShown(info)).toBe(false));
+		});
+
+		test('leaves with the hub', async () => {
+			hub = new Hub({ appendTo: container });
+
+			await userEvent.click((await screen.findAllByRole('button', { name: 'Show info' }))[0]);
+			const info = await infoOf('First Game');
+
+			hub.destroy();
+			hub = null;
+
+			expect(info.isConnected).toBe(false);
+		});
+	});
+
 	test('a copied link says so beside what was pressed, not at a point of its own', async () => {
 		hub = new Hub({ appendTo: container });
 

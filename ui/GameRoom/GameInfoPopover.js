@@ -24,7 +24,8 @@ export default class GameInfoPopover extends (styled.Popover`
 
 	build() {
 		super.build();
-		this._init();
+		// Settles once the game's rows are in (or it's gone, its game couldn't be loaded): opened then, it's placed at its size
+		this.loaded = this._init();
 	}
 
 	async _init() {
