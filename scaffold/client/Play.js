@@ -35,7 +35,10 @@ export default class Play extends View {
 				...options,
 				toolbar: {
 					heading: '',
-					left: [new Link({ textContent: '🏠', href: '#/', variant: 'button', tooltip: false }), scores],
+					left: [
+						new Link({ textContent: '🏠', 'aria-label': 'Home', href: '#/', variant: 'button', tooltip: false }),
+						scores,
+					],
 					right: [
 						new SoundToggle({ sound }),
 						new Button({ textContent: '➕👫', title: 'Someone else joins', onPointerPress: () => this.invite() }),
@@ -174,7 +177,7 @@ export default class Play extends View {
 			size: 'fit',
 			header: '➕👫',
 			body: new JoinCard({ gameId: this.options.gameId }),
-			buttons: ['✅'],
+			buttons: [{ textContent: '✅', 'aria-label': 'Done' }],
 			onButtonPress: ({ closeDialog }) => closeDialog(),
 		});
 	}

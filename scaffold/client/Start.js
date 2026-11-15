@@ -5,6 +5,17 @@ import { View } from '@fatlard1993/web-game-framework/ui';
 // The first screen, in pictures so anyone can play it: pick who you are (an animal), press play. There is one game for
 // everyone on this server, made the first time someone plays; the lobby at #/hub makes more, or watches one.
 const AVATARS = ['🦊', '🐸', '🐼', '🦄', '🐙', '🐯', '🐧', '🐝'];
+// What each avatar is called to someone who can't see it; a new avatar gets a name here too
+const AVATAR_NAMES = {
+	'🦊': 'Fox',
+	'🐸': 'Frog',
+	'🐼': 'Panda',
+	'🦄': 'Unicorn',
+	'🐙': 'Octopus',
+	'🐯': 'Tiger',
+	'🐧': 'Penguin',
+	'🐝': 'Bee',
+};
 const GAME_NAME = 'Everyone';
 
 const Screen = styled(
@@ -89,6 +100,7 @@ export default class Start extends View {
 			avatar =>
 				new Avatar({
 					textContent: avatar,
+					'aria-label': AVATAR_NAMES[avatar],
 					pressed: avatar === picked,
 					appendTo: avatars,
 					onPointerPress: () => {
