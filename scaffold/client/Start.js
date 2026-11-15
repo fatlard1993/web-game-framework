@@ -1,4 +1,4 @@
-import { Button, Component, Notify, styled } from '@vanilla-bean/components';
+import { Button, Component, Elem, Notify, failureReason, styled } from '@vanilla-bean/components';
 import { createGame, getGames, joinGame } from '@fatlard1993/web-game-framework/client';
 import { View } from '@fatlard1993/web-game-framework/ui';
 
@@ -121,14 +121,22 @@ export default class Start extends View {
 					const found = (await everyonesGame()) ?? (await createGame({ body: { name: GAME_NAME } })).body;
 					const joined = await joinGame(found.id, { body: { name: picked } });
 
-					if (!joined.body?.id) throw new Error(`could not join: ${JSON.stringify(joined.body)}`);
+					if (!joined.body?.id) throw new Error(failureReason(joined) || 'the game gave no player back');
 					localStorage.setItem(found.id, joined.body.id);
 					localStorage.setItem('avatar', picked);
 					window.location.href = `#/play/${found.id}`;
 				} catch (error) {
-					// Said where it happened, in a picture and two words, and kept for whoever looks at the console
+					// Said where it happened, in a picture and two words, with the reason small beneath for whoever can read it
 					console.error('Could not start playing', error);
-					new Notify({ x: window.innerWidth / 2, y: 120, intent: 'danger', content: '😕 Try again' });
+					new Notify({
+						intent: 'danger',
+						content: new Component({
+							append: [
+								'😕 Try again',
+								new Elem({ tag: 'small', textContent: error.message, style: { display: 'block' } }),
+							],
+						}),
+					});
 				}
 			},
 		});
