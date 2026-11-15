@@ -36,7 +36,8 @@ export default class Join extends View {
 						new Button({
 							content: options.toolbar?.joinText || 'Join',
 							onPointerPress: async () => {
-								if (this.form.hasErrors()) return;
+								// Pressed before the game has loaded, there's no form yet: the loading state is showing
+								if (!this.form || this.form.hasErrors()) return;
 
 								const join = await joinGame(this.options.gameId, {
 									body: { ...this.form.options.data, playerId: localStorage.getItem(this.options.gameId) },

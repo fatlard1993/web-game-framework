@@ -47,4 +47,23 @@ describe('Join', () => {
 		await screen.findByRole('textbox', { name: 'Player Name' });
 		expect(spinner()).toBeNull();
 	});
+
+	test('a press on Join before the game arrives does nothing, rather than throw', async () => {
+		let release;
+
+		fetchSpy = spyOn(globalThis, 'fetch').mockImplementation(
+			() => new Promise(resolve => (release = () => resolve(Response.json({ id: 'g1', name: 'Friday', players: [] })))),
+		);
+
+		join = new Join({ gameId: 'g1', appendTo: container });
+
+		await waitFor(() => expect(spinner()).not.toBeNull());
+		// The press handler is async: a missing form rejects its promise rather than throwing at the click
+		// eslint-disable-next-line testing-library/no-node-access
+		const press = screen.getByRole('button', { name: 'Join' })._component.options.onPointerPress;
+
+		await expect(press()).resolves.toBeUndefined();
+
+		release();
+	});
 });
