@@ -1,4 +1,4 @@
-import { Link, Button, Notify, Form, failureReason, theme } from '@vanilla-bean/components';
+import { Link, Button, Notify, Form, EmptyState, failureReason, theme } from '@vanilla-bean/components';
 
 import { View } from '../layout/index.js';
 import { getGame, joinGame } from '../../client/index.js';
@@ -68,7 +68,11 @@ export default class Join extends View {
 	async _init() {
 		const playerId = localStorage.getItem(this.options.gameId);
 
+		// Loading until the game arrives
+		const loading = new EmptyState({ loading: true, appendTo: this._body });
 		const game = await getGame(this.options.gameId);
+
+		loading.destroy();
 
 		if (game.response.status !== 200) {
 			new Notify({ intent: 'danger', content: `Couldn't load the game: ${failureReason(game)}` });
