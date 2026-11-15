@@ -17,7 +17,7 @@ const listen = () => {
 
 		waiting.delete(message.ack);
 		if (!message.ok && !quiet && typeof Notify !== 'undefined')
-			new Notify({ x: window.innerWidth / 2, y: 100, intent: 'warning', content: message.error, timeout: 2500 });
+			new Notify({ x: window.innerWidth / 2, y: 100, intent: 'warning', content: message.error });
 		resolve(
 			message.ok
 				? { ok: true, ...('result' in message && { result: message.result }) }
