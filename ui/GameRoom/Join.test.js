@@ -66,4 +66,29 @@ describe('Join', () => {
 
 		release();
 	});
+
+	test('a server out of reach shows a failed state with Try again, and keeps the seat', async () => {
+		localStorage.setItem('g2', 'seat-1');
+		fetchSpy = spyOn(globalThis, 'fetch').mockImplementation(async () =>
+			Response.json({ error: 'Bad gateway' }, { status: 502 }),
+		);
+		join = new Join({ gameId: 'g2', appendTo: container });
+
+		expect(await screen.findByRole('button', { name: 'Try again' })).toBeInTheDocument();
+		expect(screen.getByText('Bad gateway')).toBeInTheDocument();
+		expect(localStorage.getItem('g2')).toBe('seat-1');
+
+		localStorage.removeItem('g2');
+	});
+
+	test('a game that is gone forgets the seat and goes back to the hub', async () => {
+		localStorage.setItem('g3', 'seat-2');
+		fetchSpy = spyOn(globalThis, 'fetch').mockImplementation(async () =>
+			Response.json({ error: 'No such game' }, { status: 404 }),
+		);
+		join = new Join({ gameId: 'g3', appendTo: container });
+
+		await waitFor(() => expect(localStorage.getItem('g3')).toBeNull());
+		expect(window.location.hash).toBe('#/hub');
+	});
 });

@@ -75,7 +75,8 @@ export default class Join extends View {
 
 		loading.destroy();
 
-		if (game.response.status !== 200) {
+		// Gone: said, and back to the hub, the seat forgotten
+		if (game.response?.status === 404) {
 			new Notify({ intent: 'danger', content: `Couldn't load the game: ${failureReason(game)}` });
 
 			localStorage.removeItem(this.options.gameId);
@@ -85,10 +86,29 @@ export default class Join extends View {
 			return;
 		}
 
+		// Out of reach (the network, the server): said here, with Try again, and the seat kept
+		if (game.status === 'error') {
+			const failed = new EmptyState({
+				appendTo: this._body,
+				icon: 'triangle-exclamation',
+				title: "Couldn't load the game",
+				message: failureReason(game),
+				action: {
+					textContent: 'Try again',
+					onPointerPress: () => {
+						failed.destroy();
+						this._init();
+					},
+				},
+			});
+
+			return;
+		}
+
 		this.game = game.body;
 
 		if (playerId && game.body.players.some(({ id }) => id === playerId)) {
-			window.location.href = `#/play/${this.options.gameId}`;
+			window.location.href = this.options.playUrl || `#/play/${this.options.gameId}`;
 
 			return;
 		}
