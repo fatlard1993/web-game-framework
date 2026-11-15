@@ -104,4 +104,15 @@ describe('Hub', () => {
 		for (const button of screen.getAllByRole('button')) expect(button).toHaveClass('variant-flat');
 		for (const link of screen.getAllByRole('link')) expect(link).not.toHaveClass('has-tooltip');
 	});
+
+	test('a copied link says so beside what was pressed, not at a point of its own', async () => {
+		hub = new Hub({ appendTo: container });
+
+		await userEvent.click(await screen.findByRole('button', { name: 'Copy link' }));
+
+		const copied = await screen.findByText('Copied link to clipboard!');
+
+		// Beside the button, or the corner stack when there's no room beside it: placed at a point, it is neither
+		expect(copied.matches('.anchored, .stacked')).toBe(true);
+	});
 });

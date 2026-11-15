@@ -29,7 +29,8 @@ let lost = null;
 const notify = options => {
 	if (typeof Notify === 'undefined') return;
 
-	return new Notify({ x: window.innerWidth / 2, y: 100, ...options });
+	// Nothing on screen caused it, so it goes to the corner stack, not beside whatever was pressed last
+	return new Notify({ anchor: false, ...options });
 };
 
 const socket = connectSocket('/ws', {

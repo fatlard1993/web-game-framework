@@ -82,3 +82,12 @@ test('the page coming back into view reconnects at once, without waiting out the
 
 	expect(FakeSocket.made.length).toBe(before + 1);
 });
+
+test("the connection's notices go to the corner stack: nothing on screen caused them", () => {
+	latest().open();
+	latest().drop();
+
+	const lost = [...document.querySelectorAll('.stacked')].find(elem => elem.textContent.includes('Connection lost'));
+
+	expect(lost).toBeDefined();
+});

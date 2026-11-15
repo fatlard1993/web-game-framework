@@ -135,13 +135,8 @@ export default class Hub extends View {
 							// An address a phone on the network can open, not localhost
 							copyToClipboard(await joinUrl(id));
 
-							new Notify({
-								x: event.clientX,
-								y: event.clientY,
-								content: 'Copied link to clipboard!',
-								intent: 'success',
-								timeout: 1300,
-							});
+							// Beside the button pressed
+							new Notify({ content: 'Copied link to clipboard!', intent: 'success', timeout: 1300 });
 						},
 					}),
 					new Button({
