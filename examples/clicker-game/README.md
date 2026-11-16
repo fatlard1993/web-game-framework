@@ -20,7 +20,7 @@ clicker-game/
 ├── build.js           # Production client build
 ├── client/
 │   ├── index.html
-│   └── client.js      # The lobby and game, in @vanilla-bean/components
+│   └── client.js      # The lobby and a game: a Router's two views (#/, #/game/:id), in @vanilla-bean/components
 └── data/              # Created on start, for persistence (not committed)
 ```
 

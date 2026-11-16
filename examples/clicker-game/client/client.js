@@ -13,6 +13,7 @@ import {
 	Notify,
 	POST,
 	Page,
+	Router,
 	SectionLabel,
 	Toolbar,
 	View,
@@ -20,11 +21,15 @@ import {
 	theme,
 } from '@vanilla-bean/components';
 
+import { href } from '../../../client/paths.js';
+
 const { colors, fontSize, space } = theme;
+
+// The two screens' paths: the router's views are keyed by these, and every way to a screen is built from them
+export const paths = { lobby: '/', game: '/game/:gameId' };
 
 // App state
 const state = {
-	view: 'lobby', // lobby | game
 	gameId: null,
 	playerId: null,
 	playerName: null,
@@ -34,6 +39,10 @@ const state = {
 	socket: null,
 	countdownInterval: null,
 };
+
+// The screen on show draws itself from the state, and again whenever it changes
+const changes = new EventTarget();
+const changed = () => changes.dispatchEvent(new Event('change'));
 
 // WebSocket setup
 function initSocket() {
@@ -66,13 +75,13 @@ function handleMessage(data) {
 		case 'gameStarted':
 			state.game.status = 'playing';
 			state.game.endTime = data.endTime;
-			app.showView('game');
+			changed();
 			break;
 		case 'click': {
 			state.game.globalClicks = data.globalClicks;
 			const player = state.game.players.find(p => p.id === data.playerId);
 			if (player) player.clicks = data.playerClicks;
-			app.showView('game');
+			changed();
 			break;
 		}
 		case 'gameEnded':
@@ -80,13 +89,13 @@ function handleMessage(data) {
 			state.game.winner = data.winner;
 			state.game.globalClicks = data.globalClicks;
 			if (state.countdownInterval) clearInterval(state.countdownInterval);
-			app.showView('game');
+			changed();
 			break;
 		case 'gameReset':
 			state.game.status = 'waiting';
 			state.game.globalClicks = 0;
 			state.game.winner = null;
-			app.showView('game');
+			changed();
 			break;
 	}
 }
@@ -109,13 +118,13 @@ async function api(endpoint, options = {}) {
 async function loadGames() {
 	state.games = null;
 	state.gamesError = null;
-	app.showView('lobby');
+	changed();
 
 	const result = await api('/api/games');
 
 	if (result.ok) state.games = result.body;
 	else state.gamesError = result.error;
-	app.showView('lobby');
+	changed();
 }
 
 async function createGame() {
@@ -137,7 +146,7 @@ async function joinGame(gameId, playerName) {
 	state.playerId = result.player.id;
 	state.playerName = playerName;
 	state.game = result.game;
-	app.showView('game');
+	window.location.hash = href(paths.game, { gameId });
 }
 
 async function refreshGame() {
@@ -148,7 +157,7 @@ async function refreshGame() {
 
 	if (!result.ok) return;
 	state.game = result.body;
-	app.showView('game');
+	changed();
 }
 
 function leaveGame() {
@@ -157,6 +166,7 @@ function leaveGame() {
 	state.playerId = null;
 	state.game = null;
 	if (state.countdownInterval) clearInterval(state.countdownInterval);
+	window.location.hash = href(paths.lobby);
 	loadGames();
 }
 
@@ -193,8 +203,22 @@ const Column = styled(
 	`,
 );
 
-class LobbyView extends View {
+// A screen drawn from the state, drawn again as it changes
+class StateView extends View {
 	build() {
+		const redraw = () => {
+			this.empty();
+			this.draw();
+		};
+
+		changes.addEventListener('change', redraw);
+		this.addCleanup('redraw', () => changes.removeEventListener('change', redraw));
+		this.draw();
+	}
+}
+
+class LobbyView extends StateView {
+	draw() {
 		new Toolbar({
 			variant: 'bar',
 			heading: 'Clicker Game',
@@ -255,10 +279,16 @@ const ClickButton = styled(
 	`,
 );
 
-class GameView extends View {
-	build() {
+class GameView extends StateView {
+	draw() {
 		const game = state.game;
-		if (!game) return;
+
+		// Not this player's game (opened by its address, or after a reload): the lobby
+		if (!game || state.gameId !== this.options.gameId) {
+			window.location.hash = href(paths.lobby);
+
+			return;
+		}
 
 		new Toolbar({
 			variant: 'bar',
@@ -312,8 +342,9 @@ class GameView extends View {
 				appendTo: body,
 			});
 
-			// Countdown
+			// Countdown, stopped when the screen goes
 			if (state.countdownInterval) clearInterval(state.countdownInterval);
+			this.addCleanup('countdown', () => clearInterval(state.countdownInterval));
 			state.countdownInterval = setInterval(() => {
 				const remaining = Math.max(0, Math.ceil((game.endTime - Date.now()) / 1000));
 				timeValue.options.textContent = `${remaining}s`;
@@ -382,26 +413,11 @@ function showJoinDialog(gameId) {
 	});
 }
 
-// Main app
-class ClickerApp extends View {
-	showView(view) {
-		this.empty();
-		if (view === 'lobby') {
-			new LobbyView({ appendTo: this });
-		} else if (view === 'game') {
-			new GameView({ appendTo: this });
-		}
-	}
-}
-
-// Init
-const app = new ClickerApp();
-
+// Init: the lobby and a game are the app's two destinations, so a Router inside the Page shows them by the address
 new Page({
 	appendTo: document.body,
-	append: [app],
+	append: new Router({ views: { [paths.lobby]: LobbyView, [paths.game]: GameView }, defaultPath: paths.lobby }),
 });
 
-app.showView('lobby');
 initSocket();
 loadGames();
