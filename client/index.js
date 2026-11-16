@@ -7,6 +7,7 @@ export { default as enterGame } from './enterGame.js';
 export { createInput, isTouch } from './input.js';
 export { createSound } from './sound.js';
 export { joinUrl } from './joinUrl.js';
+export { paths, href, pathsWith } from './paths.js';
 export { default as gameContext } from './gameContext.js';
 export * from './api.js';
 export {

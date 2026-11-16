@@ -10,7 +10,7 @@ import {
 	styled,
 } from '@vanilla-bean/components';
 
-import { deleteGame } from '../../client/index.js';
+import { deleteGame, href, pathsWith } from '../../client/index.js';
 
 export default class GameInfoDialog extends styled(
 	Dialog,
@@ -23,6 +23,8 @@ export default class GameInfoDialog extends styled(
 ) {
 	static schema = {
 		game: {},
+		// The paths that differ from the framework's, by name: Join goes by them
+		paths: {},
 	};
 
 	constructor(options = {}) {
@@ -35,7 +37,7 @@ export default class GameInfoDialog extends styled(
 				new Button({ textContent: 'Delete', intent: 'danger', onPointerPress: () => this.delete() }),
 				new Link({
 					textContent: 'Join',
-					href: `#/join/${options.game.id}`,
+					href: href(pathsWith(options.paths).join, { gameId: options.game.id }),
 					variant: 'button',
 					tooltip: false,
 					// The view changes under the dialog, which goes with it

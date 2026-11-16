@@ -1,6 +1,7 @@
 import { Dialog, Input, Label, Notify, failureReason } from '@vanilla-bean/components';
 
 import { exitGame } from '../../client/api.js';
+import { href, paths } from '../../client/paths.js';
 
 /**
  * Leaving a game. The confirming button takes the player out of the game, unless they clear the checkbox, then goes to
@@ -17,7 +18,7 @@ export default class ExitDialog extends Dialog {
 		gameId: {},
 		playerId: {},
 		// Where the player goes
-		hubUrl: { default: '#/hub' },
+		hubUrl: { default: href(paths.hub) },
 		// Called after the removal, before leaving, maybe async
 		onExit: {},
 	};

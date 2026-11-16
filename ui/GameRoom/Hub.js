@@ -1,7 +1,7 @@
 import { Link, Button, Notify, EmptyState, copyToClipboard, failureReason } from '@vanilla-bean/components';
 
 import { View } from '../layout/index.js';
-import { getGames, onMessage } from '../../client/index.js';
+import { getGames, href, onMessage, pathsWith } from '../../client/index.js';
 import { joinUrl } from '../../client/joinUrl.js';
 import { GameList, GameListText } from './GameList.js';
 import GameInfoPopover from './GameInfoPopover.js';
@@ -16,6 +16,8 @@ export default class Hub extends View {
 		buttons: {},
 		watch: { default: true },
 		popoverOptions: {},
+		// The paths that differ from the framework's, by name (client/paths.js): the links to each game build from them
+		paths: {},
 	};
 
 	constructor(options, ...children) {
@@ -30,7 +32,7 @@ export default class Hub extends View {
 					right: [
 						new Link({
 							textContent: options.toolbar?.createText || 'Create a game',
-							href: options.toolbar?.createHref || '#/create',
+							href: options.toolbar?.createHref || href(pathsWith(options.paths).create),
 							variant: 'button',
 							tooltip: false,
 						}),
@@ -119,6 +121,7 @@ export default class Hub extends View {
 			return;
 		}
 
+		const routes = pathsWith(this.options.paths);
 		const gameList = new GameList({
 			items: games.body.map(({ id, name, players }) => ({
 				append: [
@@ -128,7 +131,7 @@ export default class Hub extends View {
 						variant: 'flat',
 						onPointerPress: async () => {
 							// An address a phone on the network can open, not localhost
-							copyToClipboard(await joinUrl(id));
+							copyToClipboard(await joinUrl(id, routes.join));
 
 							// Beside the button pressed
 							new Notify({ content: 'Copied link to clipboard!', intent: 'success', timeout: 1300 });
@@ -147,6 +150,7 @@ export default class Hub extends View {
 									autoOpen: false,
 									// A press anywhere else closes it, another game's Show info among them
 									outsideClose: true,
+									...(this.options.paths && { paths: this.options.paths }),
 									...this.options.popoverOptions,
 								});
 								popovers.set(id, popover);
@@ -159,14 +163,14 @@ export default class Hub extends View {
 					}),
 					new Link({
 						content: this.options.buttons?.joinText || 'Join',
-						href: `#/join/${id}`,
+						href: href(routes.join, { gameId: id }),
 						variant: 'button',
 						tooltip: false,
 					}),
 					this.options.watch &&
 						new Link({
 							content: this.options.buttons?.watchText || 'Watch',
-							href: `#/watch/${id}`,
+							href: href(routes.watch, { gameId: id }),
 							variant: 'flat',
 							tooltip: false,
 						}),

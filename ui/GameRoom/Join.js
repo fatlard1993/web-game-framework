@@ -1,7 +1,7 @@
 import { Link, Button, Notify, Form, EmptyState, failureReason, theme } from '@vanilla-bean/components';
 
 import { View } from '../layout/index.js';
-import { getGame, joinGame } from '../../client/index.js';
+import { getGame, href, joinGame, pathsWith } from '../../client/index.js';
 
 export default class Join extends View {
 	static schema = {
@@ -11,14 +11,22 @@ export default class Join extends View {
 		containerComponent: {},
 		containerText: {},
 		containerTextProvider: {},
+		// Where a seat taken goes; the game's play path by default
 		playUrl: {},
+		// Where Back goes, and a game that's gone; the hub by default (toolbar.backHref too)
+		backHref: {},
+		// The paths that differ from the framework's, by name (client/paths.js)
+		paths: {},
 	};
 
 	constructor(options, ...children) {
+		const backHref = options.backHref || options.toolbar?.backHref || href(pathsWith(options.paths).hub);
+
 		super(
 			{
 				formInputs: [{ key: 'name', label: 'Player Name' }],
 				...options,
+				backHref,
 				// The form reads best in a column on a wide screen
 				body: { column: true, ...options.body },
 				toolbar: {
@@ -26,7 +34,7 @@ export default class Join extends View {
 					left: [
 						new Link({
 							content: options.toolbar?.backText || 'Back to the hub',
-							href: options.toolbar?.backHref || '#/hub',
+							href: backHref,
 							icon: 'arrow-left',
 							variant: 'flat',
 							tooltip: false,
@@ -50,8 +58,7 @@ export default class Join extends View {
 								localStorage.setItem(this.options.gameId, join.body.id);
 								localStorage.setItem('lastName', join.body.name);
 
-								const playUrl = this.options.playUrl || `#/play/${this.options.gameId}`;
-								window.location.href = playUrl;
+								window.location.href = this.seatHref();
 							},
 						}),
 					],
@@ -64,6 +71,11 @@ export default class Join extends View {
 	build() {
 		super.build();
 		this._init();
+	}
+
+	// Where a seat taken goes
+	seatHref() {
+		return this.options.playUrl || href(pathsWith(this.options.paths).play, { gameId: this.options.gameId });
 	}
 
 	async _init() {
@@ -81,7 +93,7 @@ export default class Join extends View {
 
 			localStorage.removeItem(this.options.gameId);
 
-			window.location.href = '#/hub';
+			window.location.href = this.options.backHref;
 
 			return;
 		}
@@ -108,7 +120,7 @@ export default class Join extends View {
 		this.game = game.body;
 
 		if (playerId && game.body.players.some(({ id }) => id === playerId)) {
-			window.location.href = this.options.playUrl || `#/play/${this.options.gameId}`;
+			window.location.href = this.seatHref();
 
 			return;
 		}

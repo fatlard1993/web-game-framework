@@ -1,7 +1,7 @@
 import { Link, Button, Form, Notify, failureReason, theme } from '@vanilla-bean/components';
 
 import { View } from '../layout/index.js';
-import { createGame } from '../../client/index.js';
+import { createGame, href, pathsWith } from '../../client/index.js';
 
 export default class Create extends View {
 	static schema = {
@@ -9,6 +9,8 @@ export default class Create extends View {
 		formInputs: {},
 		containerComponent: {},
 		containerText: {},
+		// The paths that differ from the framework's, by name (client/paths.js): Back and the new game's join go by them
+		paths: {},
 	};
 
 	constructor(options, ...children) {
@@ -23,7 +25,7 @@ export default class Create extends View {
 					left: [
 						new Link({
 							textContent: options.toolbar?.backText || 'Back to the hub',
-							href: options.toolbar?.backHref || '#/hub',
+							href: options.toolbar?.backHref || href(pathsWith(options.paths).hub),
 							icon: 'arrow-left',
 							variant: 'flat',
 							tooltip: false,
@@ -69,7 +71,7 @@ export default class Create extends View {
 			return;
 		}
 
-		window.location.href = `#/join/${created.body.id}`;
+		window.location.href = href(pathsWith(this.options.paths).join, { gameId: created.body.id });
 	}
 
 	_init() {

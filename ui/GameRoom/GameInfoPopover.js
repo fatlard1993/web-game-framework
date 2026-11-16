@@ -14,6 +14,8 @@ export default class GameInfoPopover extends (styled.Popover`
 				return game => [`Game: ${game.name}`, `Players: ${game.players.length}`];
 			},
 		},
+		// The paths that differ from the framework's, handed on to the dialog when given
+		paths: {},
 		dialogComponent: {
 			// Games override this with their own detail dialog
 			get default() {
@@ -48,7 +50,7 @@ export default class GameInfoPopover extends (styled.Popover`
 			onPointerPress: () => {
 				this.destroy();
 
-				new this.options.dialogComponent({ game });
+				new this.options.dialogComponent({ game, ...(this.options.paths && { paths: this.options.paths }) });
 			},
 		});
 	}

@@ -67,6 +67,8 @@ POST /games/:gameId/:playerId/exit  # Exit game (ExitDialog)
 
 ## Customization Points
 
+Every screen's path is in one map, `paths` from `@fatlard1993/web-game-framework/client` (`start`, `hub`, `create`, `join`, `play`, `watch`), with `href(path, params)` to fill one in: a game's router keys its views by these, and the lobby's links build from them. A game whose paths differ gives Hub, Join, Create and GameInfoDialog the ones that differ as their `paths` option (`paths: { hub: '/lobby' }`).
+
 Each component accepts options for customization:
 
 **Hub.js**:
@@ -75,17 +77,21 @@ Each component accepts options for customization:
 - `noGamesText` - Message when no games exist
 - `buttons` - Customize button labels
 - `watch` - `false` leaves out each game's Watch link, for a game with no watch screen
+- `paths` - The paths that differ from the framework's; `toolbar.createHref` still sets the create link alone
 
 **Join.js**:
 
 - `formInputs` - Form field configuration
 - `containerComponent` - Custom wrapper
-- `playUrl` - Where to redirect after joining
+- `playUrl` - Where to redirect after joining; the play path by default
+- `backHref` - Where Back goes, and a game that's gone; the hub by default (`toolbar.backHref` too)
+- `paths` - The paths that differ from the framework's
 
 **Create.js**:
 
 - `formInputs` - Form field configuration
 - `containerComponent` - Custom wrapper
+- `paths` - The paths that differ from the framework's: Back, and the new game's join
 
 **ExitDialog.js** (a `Dialog`; `header` defaults to "Exit this game?"):
 
@@ -93,7 +99,7 @@ Each component accepts options for customization:
 - `label` - The "Remove me from the game" checkbox, ticked to start
 - `confirmLabel` - The confirming button, after Cancel; defaults to "Exit"
 - `onExit` - Called after the removal and before leaving, maybe async (stop the music)
-- `hubUrl` - Where the player goes; defaults to `#/hub`
+- `hubUrl` - Where the player goes; defaults to the hub's path
 
 A removal that fails shows the server's reason in a Notify, and the player still leaves.
 
