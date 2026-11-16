@@ -1,5 +1,5 @@
 import { Button, Component, Dialog, Link, styled } from '@vanilla-bean/components';
-import { act, createInput, createSound, enterGame, isTouch } from '@fatlard1993/web-game-framework/client';
+import { act, createInput, createSound, enterGame, href, isTouch, paths } from '@fatlard1993/web-game-framework/client';
 import { JoinCard, SoundToggle, Stage, View } from '@fatlard1993/web-game-framework/ui';
 
 import { FIELD } from '../rules.js';
@@ -36,7 +36,13 @@ export default class Play extends View {
 				toolbar: {
 					heading: '',
 					left: [
-						new Link({ textContent: '🏠', 'aria-label': 'Home', href: '#/', variant: 'button', tooltip: false }),
+						new Link({
+							textContent: '🏠',
+							'aria-label': 'Home',
+							href: href(paths.start),
+							variant: 'button',
+							tooltip: false,
+						}),
 						scores,
 					],
 					right: [
@@ -69,8 +75,8 @@ export default class Play extends View {
 				this.draw(view);
 			},
 			// Not in this game (or it's gone): the start screen sorts it out
-			notMember: () => (window.location.href = '#/'),
-			gone: () => (window.location.href = '#/'),
+			notMember: () => (window.location.href = href(paths.start)),
+			gone: () => (window.location.href = href(paths.start)),
 		});
 
 		this.stage = stage;

@@ -1,4 +1,5 @@
 import { Page, Router } from '@vanilla-bean/components';
+import { paths } from '@fatlard1993/web-game-framework/client';
 import { Create, Hub, Join } from '@fatlard1993/web-game-framework/ui';
 
 import '@fatlard1993/web-game-framework/client/socket';
@@ -16,13 +17,14 @@ class Watch extends Play {
 	}
 }
 
-const views = {
-	'/': Start,
-	'/play/:gameId': Play,
-	'/watch/:gameId': Watch,
-	'/hub': Hub,
-	'/create': Create,
-	'/join/:gameId': Join,
+// Each screen by its path in the framework's map, which every link and redirect also builds from (href(paths.play, ...))
+export const views = {
+	[paths.start]: Start,
+	[paths.play]: Play,
+	[paths.watch]: Watch,
+	[paths.hub]: Hub,
+	[paths.create]: Create,
+	[paths.join]: Join,
 };
 
-new Page({ appendTo: document.body, append: new Router({ views, defaultPath: '/' }) });
+new Page({ appendTo: document.body, append: new Router({ views, defaultPath: paths.start }) });

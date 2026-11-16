@@ -14,7 +14,7 @@ A web game on `@fatlard1993/web-game-framework` and `@vanilla-bean/components`. 
 - `Game.js`: one running game, on the server. `state` is what's true; `actions` are what a player can do (each runs as the player whose page sent it, and `refuse('why')` turns one down); `every(ms, ...)` is its loop, stopped when the game is deleted; `viewFor(playerId)` is what each page is sent, and `publish()` sends it (by itself after every action); `onPresence` hears a player's page open or close. `static version` and `migrations` keep old saves loading, `static transient` names state that's never saved.
 - `Game.test.js`: the rules and actions tested without a browser (`bun test`). A new rule gets a test here.
 - `server.js`: the `Server`, a few lines: the games' routes, the save file, the built page, and its port.
-- `client/index.js`: the page's routes: this game's `Start`, `Play` and watch views, and the framework's lobby at `#/hub`.
+- `client/index.js`: the page's routes: this game's `Start`, `Play` and watch views, and the framework's lobby at `#/hub`, keyed by the framework's `paths` map and exported as `views`. A way to a screen is built from the same map, `href(paths.play, { gameId })`, never a hash written out.
 - `client/Start.js`: the first screen. Pick an animal and press play; everyone joins the one game on this server, made the first time someone plays.
 - `client/Play.js`: what a player sees and does: `enterGame` opens the game and hands each view the server sends to `draw`; the `Stage` is the play area, filling the screen; `createInput` turns keys, a finger or the mouse into `act('steer', ...)`; `createSound` plays the game's sounds; the ➕👫 button shows a `JoinCard` a phone can scan.
 

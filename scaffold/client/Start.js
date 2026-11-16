@@ -1,5 +1,5 @@
 import { Button, Component, Elem, Notify, failureReason, styled } from '@vanilla-bean/components';
-import { createGame, getGames, joinGame } from '@fatlard1993/web-game-framework/client';
+import { createGame, getGames, href, joinGame, paths } from '@fatlard1993/web-game-framework/client';
 import { View } from '@fatlard1993/web-game-framework/ui';
 
 // The first screen, in pictures so anyone can play it: pick who you are (an animal), press play. There is one game for
@@ -88,7 +88,7 @@ export default class Start extends View {
 
 		// Already in: straight to the game
 		if (game && game.players.some(({ id }) => id === localStorage.getItem(game.id))) {
-			window.location.href = `#/play/${game.id}`;
+			window.location.href = href(paths.play, { gameId: game.id });
 
 			return;
 		}
@@ -124,7 +124,7 @@ export default class Start extends View {
 					if (!joined.body?.id) throw new Error(failureReason(joined) || 'the game gave no player back');
 					localStorage.setItem(found.id, joined.body.id);
 					localStorage.setItem('avatar', picked);
-					window.location.href = `#/play/${found.id}`;
+					window.location.href = href(paths.play, { gameId: found.id });
 				} catch (error) {
 					// Said where it happened, in a picture and two words, with the reason small beneath for whoever can read it
 					console.error('Could not start playing', error);
