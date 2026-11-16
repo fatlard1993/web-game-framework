@@ -67,6 +67,9 @@ function send(data) {
 function handleMessage(data) {
 	if (data.error) return new Notify({ intent: 'danger', content: data.error });
 
+	// A message still in flight as the player left: there's no game to update
+	if (!state.game) return;
+
 	switch (data.update) {
 		case 'playerJoined':
 		case 'playerLeft':
